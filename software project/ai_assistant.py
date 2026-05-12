@@ -8,11 +8,8 @@ try:
 except ImportError:
     ANTHROPIC_AVAILABLE = False
 
-
-# Retrieve the API key from the environment.
-# Set ANTHROPIC_API_KEY in your .env or hosting platform secrets.
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-MAX_HISTORY_TURNS = 6  # number of prior turns to include (cost-control measure)
+MAX_HISTORY_TURNS = 6 
 
 
 def _build_system_prompt(profile: Optional[Dict[str, Any]]) -> str:
