@@ -1,0 +1,27 @@
+# Core framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+jinja2==3.1.4
+python-multipart==0.0.9
+
+# HTTP client
+httpx==0.27.2
+
+# DNS / network
+dnspython==2.7.0
+
+# RSS feed parsing
+# NOTE: On Debian/Ubuntu systems where sgmllib3k fails to build, install via:
+#   sudo apt-get install python3-feedparser
+# On other systems: pip install feedparser==6.0.11
+feedparser==6.0.11
+
+# Environment & utilities
+python-dotenv==1.0.1
+aiofiles==24.1.0
+
+# URL analysis
+tldextract==5.1.2
+
+# Data validation
+pydantic==2.9.2

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CyberShield — Privacy &amp; Security Auditor</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <meta name="description" content="Comprehensive personal privacy, device security, and network audit tools." />
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+
+<div id="app">
+
+  <!-- ── Header ────────────────────────────────────────── -->
+  <header>
+    <a class="logo" href="#" onclick="return false;">[CYBER<span>SHIELD</span>]</a>
+    <span class="header-tagline">Privacy &amp; Security Audit Platform</span>
+    <div class="header-status">
+      <div class="pulse"></div>
+      <span id="dash-ip" class="mono">…</span>
+    </div>
+  </header>
+
+  <div id="layout">
+
+    <!-- ── Sidebar nav ───────────────────────────────────── -->
+    <nav id="sidebar">
+      <div class="nav-section-label">Modules</div>
+
+      <div class="nav-item active" data-panel="home">
+        <span class="icon">🏠</span>
+        <span class="label">Dashboard</span>
+      </div>
+
+      <div class="nav-item" data-panel="location">
+        <span class="icon">📍</span>
+        <span class="label">Location &amp; Privacy</span>
+      </div>
+
+      <div class="nav-item" data-panel="breach">
+        <span class="icon">🔓</span>
+        <span class="label">Breach Checker</span>
+      </div>
+
+      <div class="nav-item" data-panel="phishing">
+        <span class="icon">🎣</span>
+        <span class="label">Phishing Detector</span>
+      </div>
+
+      <div class="nav-item" data-panel="stalkerware">
+        <span class="icon">🕵️</span>
+        <span class="label">Stalkerware Check</span>
+      </div>
+
+      <div class="nav-item" data-panel="webrtc">
+        <span class="icon">📡</span>
+        <span class="label">WebRTC Leak Test</span>
+      </div>
+
+      <div class="nav-item" data-panel="dns">
+        <span class="icon">🌐</span>
+        <span class="label">DNS Leak Test</span>
+      </div>
+
+      <div class="nav-item" data-panel="threats">
+        <span class="icon">📰</span>
+        <span class="label">Threat Intel Feed</span>
+      </div>
+
+      <div style="flex:1"></div>
+      <div class="nav-section-label" style="padding-top:0">
+        <span class="text-dim" style="font-size:10px">Powered by FastAPI</span>
+      </div>
+    </nav>
+
+    <!-- ── Main content ──────────────────────────────────── -->
+    <main id="content">
+
+      <!-- ════════════════════════════════════════════
+           PANEL 0 — Dashboard
+           ════════════════════════════════════════════ -->
+      <div id="panel-home" class="panel active">
+        <div class="section-header">
+          <span class="section-icon">🛡️</span>
+          <div>
+            <div class="section-title">CyberShield — Personal Security Auditor</div>
+            <div class="section-subtitle">Seven integrated tools to assess and harden your digital privacy posture</div>
+          </div>
+        </div>
+
+        <!-- Live snapshot -->
+        <div class="card mb-16">
+          <div class="card-title">Your Current Exposure Snapshot</div>
+          <div class="grid-3">
+            <div style="text-align:center;padding:12px">
+              <div class="mono text-cyan" style="font-size:11px;letter-spacing:2px;margin-bottom:6px">PUBLIC IP</div>
+              <div class="mono text-green bold" id="dash-ip" style="font-size:16px">—</div>
+            </div>
+            <div style="text-align:center;padding:12px">
+              <div class="mono text-cyan" style="font-size:11px;letter-spacing:2px;margin-bottom:6px">APPROX. LOCATION</div>
+              <div class="mono text-yellow bold" id="dash-city" style="font-size:16px">—</div>
+            </div>
+            <div style="text-align:center;padding:12px">
+              <div class="mono text-cyan" style="font-size:11px;letter-spacing:2px;margin-bottom:6px">ISP / ORG</div>
+              <div class="mono text-orange bold" id="dash-isp" style="font-size:13px;word-break:break-all">—</div>
+            </div>
+          </div>
+          <p class="text-dim small" style="padding-top:8px;border-top:1px solid var(--border)">
+            ⚠ The above is what every website you visit sees about you — without any interaction or permission.
+          </p>
+        </div>
+
+        <!-- Module grid -->
+        <div class="grid-2">
+
+          <div class="card" style="cursor:pointer" onclick="document.querySelector('[data-panel=location]').click()">
+            <div class="card-title">📍 Location &amp; Privacy Auditor</div>
+            <p class="small text-dim">Captures browser GPS and IP address. Performs data leakage analysis and explains passive satellite GPS vs cell-tower vs IP tracking with a risk score.</p>
+          </div>
+
+          <div class="card" style="cursor:pointer" onclick="document.querySelector('[data-panel=breach]').click()">
+            <div class="card-title">🔓 Device Compromise / Breach Checker</div>
+            <p class="small text-dim">Check email or password against HaveIBeenPwned's database using k-anonymity (your password is never transmitted in full). Reveals which breaches exposed your data.</p>
+          </div>
+
+          <div class="card" style="cursor:pointer" onclick="document.querySelector('[data-panel=phishing]').click()">
+            <div class="card-title">🎣 Link Spoofing &amp; Phishing Detector</div>
+            <p class="small text-dim">10-point URL analysis: homograph/IDN attacks, domain age via RDAP, suspicious TLDs, keyword scanning, subdomain depth, and HTTPS verification.</p>
+          </div>
+
+          <div class="card" style="cursor:pointer" onclick="document.querySelector('[data-panel=stalkerware]').click()">
+            <div class="card-title">🕵️ Interactive Stalkerware Checklist</div>
+            <p class="small text-dim">10-question behavioural diagnostic covering battery anomalies, data spikes, physical access risk, unknown apps, and social information leakage. Generates a tailored remediation guide.</p>
+          </div>
+
+          <div class="card" style="cursor:pointer" onclick="document.querySelector('[data-panel=webrtc]').click()">
+            <div class="card-title">📡 WebRTC IP Leak Test</div>
+            <p class="small text-dim">Forces a WebRTC peer connection using multiple STUN servers to discover your true public IP. Detects VPN bypass leaks that expose your real identity.</p>
+          </div>
+
+          <div class="card" style="cursor:pointer" onclick="document.querySelector('[data-panel=dns]').click()">
+            <div class="card-title">🌐 DNS Leak Test</div>
+            <p class="small text-dim">Queries multiple DNS-over-HTTPS endpoints to identify which resolver is handling your requests. Alerts if your ISP is intercepting queries despite custom DNS settings.</p>
+          </div>
+
+          <div class="card" style="cursor:pointer;grid-column:1/-1" onclick="document.querySelector('[data-panel=threats]').click()">
+            <div class="card-title">📰 Live Threat Intelligence Feed</div>
+            <p class="small text-dim">Aggregates RSS feeds from Krebs on Security, The Hacker News, CISA, Bleeping Computer, Dark Reading, Threatpost, and Schneier on Security. Classifies articles by severity, platform (iOS/Android), and threat type.</p>
+          </div>
+
+        </div>
+
+        <!-- Privacy tip -->
+        <div class="card mt-16" style="border-color:var(--purple);background:rgba(139,92,246,0.04)">
+          <div class="card-title" style="color:var(--purple)">Privacy Principles</div>
+          <div class="grid-3" style="gap:12px">
+            <div>
+              <div class="bold small mb-8">🔐 Zero-Knowledge Testing</div>
+              <p class="text-dim" style="font-size:11px;line-height:1.7">Password checks use SHA-1 k-anonymity — only the first 5 characters of the hash are sent to HIBP. Your password never leaves this page in plaintext.</p>
+            </div>
+            <div>
+              <div class="bold small mb-8">📱 Local Processing</div>
+              <p class="text-dim" style="font-size:11px;line-height:1.7">Stalkerware quiz answers are processed in-session only. No answers are logged or stored server-side.</p>
+            </div>
+            <div>
+              <div class="bold small mb-8">🌍 Open Source Intelligence</div>
+              <p class="text-dim" style="font-size:11px;line-height:1.7">All threat intelligence comes from public RSS feeds. No third-party tracking, ad networks, or analytics are used.</p>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-home -->
+
+
+      <!-- ════════════════════════════════════════════
+           PANEL 1 — Location & Privacy
+           ════════════════════════════════════════════ -->
+      <div id="panel-location" class="panel">
+        <div class="section-header">
+          <span class="section-icon">📍</span>
+          <div>
+            <div class="section-title">Location &amp; Privacy Auditor</div>
+            <div class="section-subtitle">Analyse how your device and browser expose your geographic location</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Choose Analysis Mode</div>
+          <p class="text-dim small mb-16">
+            <strong>IP Only</strong> runs passively — no browser prompt. <strong>Request GPS</strong> asks for
+            your browser's geolocation permission to demonstrate how precise satellite tracking can be.
+          </p>
+          <div class="flex flex-wrap" style="gap:12px">
+            <button class="btn btn-cyan" id="btn-scan-ip">🌐 Analyse IP Address</button>
+            <button class="btn btn-primary" id="btn-request-gps">📍 Request GPS + IP Analysis</button>
+          </div>
+        </div>
+
+        <div id="location-result"></div>
+      </div><!-- /panel-location -->
+
+
+      <!-- ════════════════════════════════════════════
+           PANEL 2 — Breach Checker
+           ════════════════════════════════════════════ -->
+      <div id="panel-breach" class="panel">
+        <div class="section-header">
+          <span class="section-icon">🔓</span>
+          <div>
+            <div class="section-title">Device Compromise &amp; Breach Checker</div>
+            <div class="section-subtitle">Check if your credentials have been exposed in a known data breach</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Check Email or Password</div>
+
+          <div class="input-group">
+            <select class="cs-input" id="breach-type" style="max-width:160px">
+              <option value="password">Password</option>
+              <option value="email">Email address</option>
+            </select>
+            <input
+              class="cs-input"
+              id="breach-input"
+              type="text"
+              placeholder="Enter password or email address…"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button class="btn btn-danger" id="btn-check-breach">🔍 Check Breach</button>
+          </div>
+
+          <div class="card" style="background:var(--surface2);border-color:rgba(0,212,255,0.15)">
+            <div class="card-title" style="color:var(--cyan)">How k-Anonymity Works (Password Mode)</div>
+            <p class="small text-dim" style="line-height:1.8">
+              Your password is hashed locally using SHA-1. Only the first <strong>5 hex characters</strong>
+              of that hash are sent to the HaveIBeenPwned API. The API returns all breach hashes matching
+              that prefix (~500 results). Your browser checks if the full hash matches locally.
+              <strong>Your actual password is never transmitted.</strong> This is the k-anonymity model
+              developed by Troy Hunt.
+            </p>
+          </div>
+
+          <div class="card" style="background:var(--surface2);border-color:rgba(255,215,0,0.15)">
+            <div class="card-title" style="color:var(--yellow)">Email Mode — API Key Required</div>
+            <p class="small text-dim" style="line-height:1.8">
+              Email breach lookups require a HaveIBeenPwned API key (paid, ~$3.50/month).
+              Add <code class="mono text-green">HIBP_API_KEY=your_key</code> to your <code class="mono">.env</code> file.
+              Without a key, the tool shows a sample response.
+            </p>
+          </div>
+        </div>
+
+        <div id="breach-result"></div>
+      </div><!-- /panel-breach -->
+
+
+      <!-- ════════════════════════════════════════════
+           PANEL 3 — Phishing Detector
+           ════════════════════════════════════════════ -->
+      <div id="panel-phishing" class="panel">
+        <div class="section-header">
+          <span class="section-icon">🎣</span>
+          <div>
+            <div class="section-title">Link Spoofing &amp; Phishing Detector</div>
+            <div class="section-subtitle">10-point analysis engine for URL threat assessment</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Analyse a URL</div>
+          <div class="input-group">
+            <input
+              class="cs-input"
+              id="phishing-input"
+              type="text"
+              placeholder="Paste any URL to analyse — e.g. https://paypa1.com/secure/login"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button class="btn btn-danger" id="btn-analyze-url">🔬 Analyse URL</button>
+          </div>
+
+          <div class="grid-2" style="gap:10px;margin-top:8px">
+            <div class="card" style="background:var(--surface2)">
+              <div class="card-title" style="font-size:10px">What We Check</div>
+              <ul class="small text-dim" style="padding-left:16px;line-height:2">
+                <li>Homograph / IDN character spoofing</li>
+                <li>Mixed Unicode script detection</li>
+                <li>Suspicious phishing keywords</li>
+                <li>High-risk TLD (.tk, .ml, .xyz…)</li>
+                <li>HTTPS enforcement</li>
+              </ul>
+            </div>
+            <div class="card" style="background:var(--surface2)">
+              <div class="card-title" style="font-size:10px">Additional Signals</div>
+              <ul class="small text-dim" style="padding-left:16px;line-height:2">
+                <li>Subdomain nesting depth</li>
+                <li>Raw IP address as hostname</li>
+                <li>URL shortener detection</li>
+                <li>Excessive URL length</li>
+                <li>Domain age via RDAP WHOIS</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div id="phishing-result"></div>
+      </div><!-- /panel-phishing -->
+
+
+      <!-- ════════════════════════════════════════════
+           PANEL 4 — Stalkerware Checklist
+           ════════════════════════════════════════════ -->
+      <div id="panel-stalkerware" class="panel">
+        <div class="section-header">
+          <span class="section-icon">🕵️</span>
+          <div>
+            <div class="section-title">Interactive Stalkerware Checklist</div>
+            <div class="section-subtitle">Behavioural diagnostic with weighted risk score and remediation guide</div>
+          </div>
+        </div>
+
+        <div class="card" style="border-color:rgba(255,107,53,0.3);background:rgba(255,107,53,0.03)">
+          <div class="card-title" style="color:var(--orange)">What is Stalkerware?</div>
+          <p class="small text-dim" style="line-height:1.8">
+            Stalkerware (also called spouseware or creepware) is software secretly installed on a device —
+            usually by a partner, family member, or employer — to covertly monitor calls, messages, location,
+            and media. It requires brief physical access to install and hides itself from app lists and
+            notification trays. The Coalition Against Stalkerware estimates millions of devices are affected globally.
+          </p>
+        </div>
+
+        <div id="quiz-container"></div>
+
+        <div class="flex mt-16" style="gap:12px">
+          <button class="btn btn-danger hidden" id="btn-assess">⚡ Calculate Risk Score</button>
+        </div>
+
+        <div id="assessment-result" class="mt-16"></div>
+      </div><!-- /panel-stalkerware -->
+
+
+      <!-- ════════════════════════════════════════════
+           PANEL 5 — WebRTC Leak Test
+           ════════════════════════════════════════════ -->
+      <div id="panel-webrtc" class="panel">
+        <div class="section-header">
+          <span class="section-icon">📡</span>
+          <div>
+            <div class="section-title">WebRTC IP Leak Test</div>
+            <div class="section-subtitle">Detect if WebRTC is bypassing your VPN and exposing your real IP</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">How This Test Works</div>
+          <p class="small text-dim" style="line-height:1.8;margin-bottom:12px">
+            WebRTC (Web Real-Time Communication) allows browsers to establish direct peer connections
+            for audio, video, and data sharing. To find the optimal route, it uses the ICE protocol
+            to discover all available network interfaces — including your real public IP — using STUN servers.
+            This test creates a dummy WebRTC peer connection to collect all discovered IPs, then compares
+            them against what the server sees. A mismatch when you're using a VPN indicates a leak.
+          </p>
+          <button class="btn btn-cyan" id="btn-retest-webrtc">🔄 Re-run WebRTC Test</button>
+        </div>
+
+        <div id="webrtc-result">
+          <div class="loading-text"><div class="spinner"></div>Initialising WebRTC test…</div>
+        </div>
+      </div><!-- /panel-webrtc -->
+
+
+      <!-- ════════════════════════════════════════════
+           PANEL 6 — DNS Leak Test
+           ════════════════════════════════════════════ -->
+      <div id="panel-dns" class="panel">
+        <div class="section-header">
+          <span class="section-icon">🌐</span>
+          <div>
+            <div class="section-title">DNS Leak Test</div>
+            <div class="section-subtitle">Identify which DNS servers are resolving your queries</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Why DNS Privacy Matters</div>
+          <div class="grid-2" style="gap:12px">
+            <div>
+              <p class="small text-dim" style="line-height:1.8">
+                DNS (Domain Name System) translates domain names to IP addresses. By default, your ISP
+                assigns your DNS resolver, giving them visibility into <strong>every domain you visit</strong> —
+                even when using HTTPS. DNS-over-HTTPS (DoH) encrypts queries to prevent this interception.
+              </p>
+            </div>
+            <div>
+              <p class="small text-dim" style="line-height:1.8">
+                A DNS leak occurs when your device bypasses your configured secure DNS (e.g., a VPN's
+                internal resolver) and falls back to your ISP's resolver. This test probes multiple
+                DoH endpoints to identify which resolver is actually handling your requests.
+              </p>
+            </div>
+          </div>
+          <button class="btn btn-cyan mt-16" id="btn-retest-dns">🔄 Re-run DNS Test</button>
+        </div>
+
+        <div id="dns-result">
+          <div class="loading-text"><div class="spinner"></div>Probing DNS resolvers…</div>
+        </div>
+      </div><!-- /panel-dns -->
+
+
+      <!-- ════════════════════════════════════════════
+           PANEL 7 — Threat Intel Feed
+           ════════════════════════════════════════════ -->
+      <div id="panel-threats" class="panel">
+        <div class="section-header">
+          <span class="section-icon">📰</span>
+          <div>
+            <div class="section-title">Live Threat Intelligence Feed</div>
+            <div class="section-subtitle">Real-time cybersecurity news from 7 authoritative sources</div>
+          </div>
+        </div>
+
+        <div id="feed-stats" class="stats-bar"></div>
+
+        <div class="feed-filters">
+          <button class="feed-filter-btn active" data-filter="all">All</button>
+          <button class="feed-filter-btn" data-filter="critical">🔴 Critical</button>
+          <button class="feed-filter-btn" data-filter="high">🟠 High</button>
+          <button class="feed-filter-btn" data-filter="mobile">📱 Mobile</button>
+          <button class="feed-filter-btn" data-filter="iOS">🍎 iOS</button>
+          <button class="feed-filter-btn" data-filter="Android">🤖 Android</button>
+          <button class="feed-filter-btn" data-filter="ransomware">💀 Ransomware</button>
+          <button class="feed-filter-btn" data-filter="zero-day">⚡ Zero-Day</button>
+          <button class="btn btn-primary hidden" id="btn-refresh-feed" style="margin-left:auto;padding:5px 14px;font-size:11px">🔄 Refresh</button>
+        </div>
+
+        <div id="feed-container">
+          <div class="loading-text"><div class="spinner"></div>Fetching threat feeds…</div>
+        </div>
+      </div><!-- /panel-threats -->
+
+    </main><!-- /content -->
+  </div><!-- /layout -->
+</div><!-- /app -->
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
