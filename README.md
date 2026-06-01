@@ -35,8 +35,6 @@ The persistence layer is portable across MySQL and SQLite so the project can be 
 > Adjust the commands below to match your repository's actual entry points and dependency files.
 
 ```bash
-# Clone the repository
-git clone https://github.com/<your-username>/team-finder.git
 cd team-finder
 
 # Create and activate a virtual environment
