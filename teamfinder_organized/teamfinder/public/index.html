@@ -1,0 +1,2850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TeamFinder — Skill-Based Student Matching</title>
+  <meta name="description" content="Find the right teammates for your university projects, powered by deterministic skill matching." />
+
+  <!-- Favicon is the same neon torus, embedded as a data URI so no file is needed -->
+  <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><ellipse cx='200' cy='200' rx='125' ry='40' fill='none' stroke='%2300f0ff' stroke-width='6'/><ellipse cx='200' cy='200' rx='58' ry='18' fill='none' stroke='%23ff2bd6' stroke-width='5'/></svg>" />
+
+  <!-- Fonts: Syne (display) + Sora (body) + JetBrains Mono (numeric/code accents) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+/* =====================================================================
+   TeamFinder — Stylesheet
+   Aesthetic: Dark cyberpunk · neon cyan/magenta · glassmorphism
+   Fonts:  Syne (display) · Sora (body) · JetBrains Mono (numbers/code)
+   ===================================================================== */
+
+/* ---------- 1. Design tokens ---------- */
+:root {
+  /* Surfaces */
+  --bg-0: #04050a;          /* deep space */
+  --bg-1: #08090f;
+  --bg-2: #0d0f17;
+  --panel: rgba(255, 255, 255, 0.035);
+  --panel-strong: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  /* Neon accents */
+  --cyan: #00f0ff;
+  --cyan-soft: #6ef3ff;
+  --cyan-deep: #0091ff;
+  --magenta: #ff2bd6;
+  --magenta-soft: #ff7be9;
+  --magenta-deep: #b800ff;
+
+  /* Text */
+  --text-0: #f4f5fa;
+  --text-1: #c9cdd9;
+  --text-2: #8b90a3;
+  --text-3: #5a5f72;
+
+  /* Status */
+  --success: #5dffb0;
+  --warn:    #ffd76a;
+  --error:   #ff5d7a;
+
+  /* Effects */
+  --glow-cyan:    0 0 24px rgba(0, 240, 255, 0.35);
+  --glow-magenta: 0 0 24px rgba(255, 43, 214, 0.35);
+  --glow-cyan-strong:    0 0 36px rgba(0, 240, 255, 0.55);
+  --glow-magenta-strong: 0 0 36px rgba(255, 43, 214, 0.50);
+  --shadow-card:  0 10px 40px -10px rgba(0, 0, 0, 0.7);
+  --blur:         18px;
+
+  /* Motion */
+  --t-fast:    140ms;
+  --t-base:    240ms;
+  --t-slow:    420ms;
+  --t-page:    520ms;
+  --ease:      cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Radii */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+}
+
+/* ---------- 2. Reset ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+input, textarea, select { font: inherit; color: inherit; background: none; border: none; outline: none; }
+a { color: inherit; text-decoration: none; }
+img, svg { display: block; max-width: 100%; }
+::selection { background: var(--magenta); color: #fff; }
+
+/* ---------- 3. Page chrome ---------- */
+body {
+  font-family: "Sora", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--text-1);
+  background: var(--bg-0);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Atmospheric background layers */
+.bg-layer {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse at 50% 30%, #000 35%, transparent 75%);
+  opacity: 0.5;
+}
+.bg-glow-cyan {
+  background:
+    radial-gradient(60vmax 60vmax at 12% 8%, rgba(0, 240, 255, 0.16), transparent 60%);
+  animation: float-cyan 22s var(--ease) infinite alternate;
+}
+.bg-glow-magenta {
+  background:
+    radial-gradient(55vmax 55vmax at 88% 92%, rgba(255, 43, 214, 0.14), transparent 60%);
+  animation: float-magenta 27s var(--ease) infinite alternate;
+}
+.bg-noise {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+}
+
+@keyframes float-cyan {
+  0%   { transform: translate(-3%, -2%); }
+  100% { transform: translate(6%, 4%); }
+}
+@keyframes float-magenta {
+  0%   { transform: translate(4%, 3%); }
+  100% { transform: translate(-5%, -4%); }
+}
+
+#app { position: relative; z-index: 1; }
+
+/* ---------- 4. Top nav ---------- */
+.topnav {
+  position: sticky; top: 0;
+  z-index: 50;
+  display: flex; align-items: center; gap: 24px;
+  padding: 14px 32px;
+  background: linear-gradient(180deg, rgba(4,5,10,0.85), rgba(4,5,10,0.55));
+  backdrop-filter: blur(var(--blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+  border-bottom: 1px solid var(--border);
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  color: var(--text-0);
+}
+.brand-logo { width: 34px; height: 34px; filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.4)); }
+.brand-text-accent { color: var(--magenta); text-shadow: 0 0 12px rgba(255, 43, 214, 0.4); }
+
+.navlinks { display: flex; gap: 4px; margin-left: 24px; }
+.navlink {
+  position: relative;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  font-size: 14px;
+  color: var(--text-2);
+  transition: color var(--t-fast) var(--ease);
+}
+.navlink::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: var(--panel);
+  border: 1px solid transparent;
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.navlink:hover { color: var(--text-0); }
+.navlink:hover::before { opacity: 1; }
+.navlink.active {
+  color: var(--cyan);
+}
+.navlink.active::before {
+  opacity: 1;
+  border-color: rgba(0, 240, 255, 0.35);
+  box-shadow: var(--glow-cyan);
+}
+.navlink span,
+.navlink {
+  position: relative;
+  z-index: 1;
+}
+
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.nav-user {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+/* ---------- 5. Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 22px;
+  border-radius: var(--r-pill);
+  font-family: "Sora", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  transition: transform var(--t-fast) var(--ease),
+              box-shadow var(--t-base) var(--ease),
+              background var(--t-fast) var(--ease),
+              color var(--t-fast) var(--ease);
+  white-space: nowrap;
+}
+.btn:active { transform: translateY(1px) scale(0.98); }
+.btn-sm { padding: 8px 14px; font-size: 13px; }
+.btn-block { width: 100%; }
+.btn-icon { padding: 12px 14px; }
+.btn-arrow { transition: transform var(--t-base) var(--ease); }
+.btn:hover .btn-arrow { transform: translateX(3px); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--cyan-deep) 100%);
+  color: #001018;
+  font-weight: 600;
+  box-shadow: var(--glow-cyan);
+}
+.btn-primary:hover {
+  box-shadow: var(--glow-cyan-strong);
+  filter: brightness(1.08);
+}
+
+.btn-secondary {
+  background: var(--panel-strong);
+  color: var(--text-0);
+  border-color: var(--border-strong);
+}
+.btn-secondary:hover {
+  background: rgba(255, 43, 214, 0.10);
+  border-color: rgba(255, 43, 214, 0.45);
+  color: var(--magenta-soft);
+  box-shadow: var(--glow-magenta);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-1);
+  border-color: var(--border-strong);
+}
+.btn-ghost:hover {
+  background: var(--panel);
+  color: var(--text-0);
+  border-color: rgba(0, 240, 255, 0.35);
+}
+
+/* ---------- 6. Glass cards ---------- */
+.glass {
+  background: var(--panel);
+  backdrop-filter: blur(var(--blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  position: relative;
+}
+.glass::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(0,240,255,0.18), transparent 40%, transparent 60%, rgba(255,43,214,0.18));
+  -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+          mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.card { padding: 24px; }
+.card + .card { margin-top: 18px; }
+
+.card-title {
+  font-family: "Syne", sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--text-0);
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.card-num {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--cyan);
+  background: rgba(0, 240, 255, 0.10);
+  border: 1px solid rgba(0, 240, 255, 0.30);
+  padding: 3px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+}
+.card-title-row { display: flex; align-items: center; justify-content: space-between; }
+.card-help { color: var(--text-2); font-size: 13px; margin-bottom: 14px; line-height: 1.6; }
+
+/* ---------- 7. Views & transitions ---------- */
+.view {
+  display: none;
+  padding: 36px 32px 80px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.view.active { display: block; animation: view-in var(--t-page) var(--ease-out); }
+.view.view-auth.active { display: flex; }
+.view.leaving { animation: view-out var(--t-base) var(--ease) forwards; }
+
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes view-out {
+  to { opacity: 0; transform: translateY(-8px); }
+}
+
+/* ---------- 8. Auth view ---------- */
+.view-auth {
+  align-items: center; justify-content: center;
+  min-height: 100vh;
+  padding: 40px;
+  max-width: none;
+}
+.auth-shell {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 60px;
+  width: 100%;
+  max-width: 1100px;
+  align-items: center;
+}
+.auth-hero { animation: hero-in 800ms var(--ease-out) both; }
+@keyframes hero-in {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.auth-logo {
+  width: 96px;
+  filter: drop-shadow(0 0 24px rgba(0, 240, 255, 0.45))
+          drop-shadow(0 0 36px rgba(255, 43, 214, 0.25));
+  margin-bottom: 22px;
+  animation: hover-bob 5s var(--ease) infinite;
+}
+@keyframes hover-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+.auth-title {
+  font-family: "Syne", sans-serif;
+  font-weight: 800;
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text-0);
+  margin-bottom: 18px;
+}
+.title-accent-cyan    { color: var(--cyan); text-shadow: 0 0 24px rgba(0, 240, 255, 0.35); }
+.title-accent-magenta { color: var(--magenta); text-shadow: 0 0 24px rgba(255, 43, 214, 0.35); }
+
+.auth-tag {
+  font-size: 17px;
+  color: var(--text-1);
+  margin-bottom: 28px;
+  max-width: 460px;
+}
+.auth-bullets { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.auth-bullets li { display: flex; align-items: center; gap: 12px; color: var(--text-2); font-size: 14px; }
+.bullet-dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot-cyan    { background: var(--cyan);    box-shadow: 0 0 10px var(--cyan); }
+.dot-magenta { background: var(--magenta); box-shadow: 0 0 10px var(--magenta); }
+
+.auth-card {
+  padding: 36px;
+  animation: hero-in 800ms 100ms var(--ease-out) both;
+}
+.auth-tabs {
+  position: relative;
+  display: flex;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  padding: 4px;
+  margin-bottom: 28px;
+}
+.auth-tab {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  position: relative;
+  z-index: 1;
+  transition: color var(--t-base) var(--ease);
+}
+.auth-tab.active { color: var(--text-0); }
+.auth-tab-indicator {
+  position: absolute;
+  top: 4px; bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  background: linear-gradient(135deg, rgba(0,240,255,0.18), rgba(255,43,214,0.18));
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: var(--r-pill);
+  transition: transform var(--t-base) var(--ease);
+  box-shadow: var(--glow-cyan);
+}
+.auth-tabs[data-tab="register"] .auth-tab-indicator { transform: translateX(100%); }
+
+.auth-form { display: flex; flex-direction: column; gap: 14px; animation: view-in var(--t-base) var(--ease-out); }
+.auth-form.hidden { display: none; }
+
+.auth-hint {
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: center;
+  margin-top: 8px;
+}
+.auth-hint code {
+  font-family: "JetBrains Mono", monospace;
+  background: var(--panel);
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+
+/* ---------- 9. Form fields ---------- */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.opt { color: var(--text-3); text-transform: none; font-weight: 400; }
+.field input,
+.field textarea {
+  background: rgba(0,0,0,0.30);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text-0);
+  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+  font-family: inherit;
+  resize: vertical;
+}
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.15);
+  background: rgba(0, 240, 255, 0.04);
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.field-row + .field { margin-top: 14px; }
+.field + .field { margin-top: 14px; }
+
+/* ---------- 10. Home view ---------- */
+.home-hero {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 48px;
+  align-items: center;
+  padding: 40px 0 60px;
+}
+.eyebrow {
+  display: inline-block;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  padding: 5px 10px;
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: var(--r-pill);
+  background: rgba(0, 240, 255, 0.06);
+  margin-bottom: 18px;
+}
+.home-title {
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 64px;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  color: var(--text-0);
+  margin-bottom: 18px;
+}
+.grad-text {
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 100%);
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+}
+.home-sub {
+  font-size: 17px;
+  color: var(--text-1);
+  max-width: 540px;
+  margin-bottom: 28px;
+}
+.home-cta-row { display: flex; gap: 12px; }
+
+.home-hero-logo {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.hero-logo-img {
+  width: 320px;
+  filter: drop-shadow(0 0 32px rgba(0, 240, 255, 0.4))
+          drop-shadow(0 0 48px rgba(255, 43, 214, 0.25));
+  animation: hover-bob 6s var(--ease) infinite;
+  position: relative;
+  z-index: 2;
+}
+.logo-orbit { position: absolute; inset: 0; pointer-events: none; }
+.logo-orbit span {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px dashed rgba(0, 240, 255, 0.18);
+  inset: 0;
+  animation: spin 20s linear infinite;
+}
+.logo-orbit span:nth-child(2) { inset: 20px; border-color: rgba(255, 43, 214, 0.15); animation-duration: 30s; animation-direction: reverse; }
+.logo-orbit span:nth-child(3) { inset: 50px; border-color: rgba(0, 240, 255, 0.10); animation-duration: 45s; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Stat row */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.stat-card {
+  padding: 22px;
+  transition: transform var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+}
+.stat-label {
+  font-size: 12px;
+  color: var(--text-2);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.stat-value {
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 44px;
+  letter-spacing: -0.02em;
+  color: var(--text-0);
+  margin-bottom: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.stat-value .unit { font-size: 22px; color: var(--cyan); margin-left: 2px; }
+.stat-bar {
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.stat-bar span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  border-radius: inherit;
+  animation: bar-fill 1.2s 0.3s var(--ease-out) forwards;
+}
+@keyframes bar-fill { to { width: var(--w); } }
+
+/* Quick nav grid */
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.quick-card {
+  padding: 24px;
+  text-align: left;
+  display: flex; flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease), border-color var(--t-base) var(--ease);
+  border: 1px solid var(--border);
+}
+.quick-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(0, 240, 255, 0.30);
+  box-shadow: var(--glow-cyan), var(--shadow-card);
+}
+.quick-card h3 {
+  font-family: "Syne", sans-serif;
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--text-0);
+}
+.quick-card p { color: var(--text-2); font-size: 13px; line-height: 1.55; flex: 1; }
+.quick-icon {
+  width: 42px; height: 42px;
+  border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 4px;
+}
+.quick-icon svg { width: 22px; height: 22px; }
+.icon-cyan    { background: rgba(0, 240, 255, 0.10); color: var(--cyan);    border: 1px solid rgba(0, 240, 255, 0.30); box-shadow: var(--glow-cyan); }
+.icon-magenta { background: rgba(255, 43, 214, 0.10); color: var(--magenta); border: 1px solid rgba(255, 43, 214, 0.30); box-shadow: var(--glow-magenta); }
+.quick-arrow {
+  margin-top: 10px;
+  font-size: 18px;
+  color: var(--cyan);
+  align-self: flex-end;
+  transition: transform var(--t-base) var(--ease);
+}
+.quick-card:hover .quick-arrow { transform: translate(4px, -2px); }
+
+/* ---------- 11. Page heads (shared) ---------- */
+.page-head {
+  display: flex; align-items: end; justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.page-title {
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 42px;
+  letter-spacing: -0.02em;
+  color: var(--text-0);
+  line-height: 1.05;
+}
+.page-sub { color: var(--text-2); font-size: 15px; margin-top: 8px; max-width: 560px; }
+.page-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+/* ---------- 12. Profile view ---------- */
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Slider */
+.slider-wrap {
+  display: flex; align-items: center; gap: 18px;
+  margin: 8px 0 6px;
+}
+input[type=range] {
+  flex: 1;
+  appearance: none;
+  height: 4px;
+  background: linear-gradient(90deg, var(--cyan) 0%, var(--cyan) var(--p,25%), rgba(255,255,255,0.08) var(--p,25%), rgba(255,255,255,0.08) 100%);
+  border-radius: var(--r-pill);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--cyan);
+  border: 3px solid var(--bg-0);
+  box-shadow: var(--glow-cyan-strong);
+  cursor: grab;
+  transition: transform var(--t-fast) var(--ease);
+}
+input[type=range]::-webkit-slider-thumb:active { transform: scale(1.15); cursor: grabbing; }
+input[type=range]::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--cyan);
+  border: 3px solid var(--bg-0);
+  box-shadow: var(--glow-cyan-strong);
+  cursor: grab;
+}
+.slider-readout {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 22px;
+  color: var(--cyan);
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.35);
+  min-width: 90px;
+  text-align: right;
+}
+.slider-unit { font-size: 11px; color: var(--text-3); margin-left: 6px; }
+.slider-scale {
+  display: flex; justify-content: space-between;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 0.05em;
+}
+
+/* Skills list */
+.skills-list { display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
+.skill-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  transition: border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.skill-row:hover { border-color: rgba(0, 240, 255, 0.3); transform: translateX(2px); }
+.skill-name {
+  font-weight: 500;
+  color: var(--text-0);
+  flex: 1;
+}
+.skill-dots { display: flex; gap: 4px; }
+.skill-dots .d {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.10);
+  transition: background var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
+}
+.skill-dots .d.on {
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+}
+.skill-level-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--text-2);
+  min-width: 44px;
+  text-align: right;
+}
+.skill-empty {
+  color: var(--text-3);
+  font-size: 13px;
+  padding: 20px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+}
+
+/* ---------- 13. Matches view ---------- */
+.matches-list { display: flex; flex-direction: column; gap: 14px; }
+.match-card {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 22px;
+  align-items: center;
+  padding: 22px 26px;
+  transition: transform var(--t-base) var(--ease-out),
+              box-shadow var(--t-base) var(--ease-out),
+              border-color var(--t-base) var(--ease-out);
+  border: 1px solid var(--border);
+  animation: card-in 500ms var(--ease-out) both;
+}
+.match-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 43, 214, 0.30);
+  box-shadow: var(--glow-magenta), var(--shadow-card);
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.avatar {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: #001018;
+  background: linear-gradient(135deg, var(--cyan), var(--magenta));
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.30);
+}
+.match-body { min-width: 0; }
+.match-name {
+  font-family: "Syne", sans-serif;
+  font-size: 19px;
+  color: var(--text-0);
+  font-weight: 600;
+}
+.match-meta {
+  color: var(--text-2);
+  font-size: 13px;
+  margin-top: 2px;
+  display: flex; gap: 14px; flex-wrap: wrap;
+}
+.match-meta-dot { color: var(--text-3); }
+.match-bio { color: var(--text-2); font-size: 13px; margin-top: 8px; line-height: 1.55;
+             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.match-skills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.skill-chip {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  background: rgba(0, 240, 255, 0.08);
+  color: var(--cyan);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  letter-spacing: 0.02em;
+}
+.skill-chip.req {
+  background: rgba(255, 43, 214, 0.08);
+  color: var(--magenta);
+  border-color: rgba(255, 43, 214, 0.25);
+}
+
+/* Circular score badge */
+.score-ring {
+  position: relative;
+  width: 76px; height: 76px;
+}
+.score-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.score-ring .ring-bg   { stroke: rgba(255,255,255,0.07); }
+.score-ring .ring-fill {
+  stroke: url(#scoreGradient);
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.5));
+  transition: stroke-dashoffset 900ms var(--ease-out);
+}
+.score-text {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--text-0);
+  letter-spacing: -0.02em;
+}
+.score-text small { font-size: 9px; color: var(--text-3); font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; margin-top: -1px; }
+
+.empty-state {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text-2);
+}
+.empty-state strong { display:block; font-family:"Syne",sans-serif; font-size: 20px; color: var(--text-0); margin-bottom: 8px; }
+
+/* ---------- 14. Projects view ---------- */
+.filter-pills { display: flex; gap: 6px; padding: 4px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: var(--r-pill); }
+.pill {
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  color: var(--text-2);
+  transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.pill:hover { color: var(--text-0); }
+.pill.active {
+  background: linear-gradient(135deg, rgba(0,240,255,0.18), rgba(255,43,214,0.12));
+  color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+.project-card {
+  padding: 22px;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: transform var(--t-base) var(--ease-out),
+              box-shadow var(--t-base) var(--ease-out),
+              border-color var(--t-base) var(--ease-out);
+  border: 1px solid var(--border);
+  cursor: default;
+  animation: card-in 500ms var(--ease-out) both;
+}
+.project-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(0, 240, 255, 0.30);
+  box-shadow: var(--glow-cyan), var(--shadow-card);
+}
+.project-head { display: flex; justify-content: space-between; align-items: start; gap: 10px; }
+.project-title { font-family: "Syne", sans-serif; font-weight: 600; font-size: 17px; color: var(--text-0); line-height: 1.3; }
+.source-tag {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  white-space: nowrap;
+}
+.source-student     { background: rgba(0, 240, 255, 0.10); color: var(--cyan);    border: 1px solid rgba(0, 240, 255, 0.30); }
+.source-github      { background: rgba(255, 255, 255, 0.06); color: var(--text-0); border: 1px solid rgba(255,255,255,0.20); }
+.source-kaggle      { background: rgba(255, 43, 214, 0.10); color: var(--magenta); border: 1px solid rgba(255, 43, 214, 0.30); }
+.source-huggingface { background: rgba(255, 215, 106, 0.08); color: #ffd76a;       border: 1px solid rgba(255, 215, 106, 0.30); }
+.source-ctftime     { background: rgba(255, 93, 122, 0.08); color: #ff8a9e;        border: 1px solid rgba(255, 93, 122, 0.30); }
+.project-desc { color: var(--text-2); font-size: 13px; line-height: 1.55; flex: 1;
+                display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.project-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-3);
+  font-family: "JetBrains Mono", monospace;
+}
+.project-skills { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---------- 15. Advisor / chat ---------- */
+.chat-shell {
+  display: flex; flex-direction: column;
+  height: 70vh;
+  min-height: 540px;
+  padding: 0;
+  overflow: hidden;
+}
+.chat-stream {
+  flex: 1;
+  padding: 28px;
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+  gap: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+.chat-stream::-webkit-scrollbar { width: 6px; }
+.chat-stream::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+
+.msg {
+  max-width: 78%;
+  padding: 12px 16px;
+  border-radius: var(--r-lg);
+  font-size: 14px;
+  line-height: 1.55;
+  animation: msg-in 360ms var(--ease-out) both;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.msg.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, rgba(0,240,255,0.22), rgba(0,145,255,0.18));
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  color: var(--text-0);
+  border-bottom-right-radius: 4px;
+}
+.msg.ai {
+  align-self: flex-start;
+  background: var(--panel);
+  border: 1px solid rgba(255, 43, 214, 0.20);
+  color: var(--text-0);
+  border-bottom-left-radius: 4px;
+}
+.msg.ai.typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 38px;
+}
+.typing-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--magenta);
+  animation: typing-pulse 1.2s var(--ease) infinite;
+  box-shadow: 0 0 8px var(--magenta);
+}
+.typing-dot:nth-child(2) { animation-delay: 0.18s; }
+.typing-dot:nth-child(3) { animation-delay: 0.36s; }
+@keyframes typing-pulse {
+  0%, 60%, 100% { opacity: 0.25; transform: scale(0.8); }
+  30%           { opacity: 1;    transform: scale(1.1); }
+}
+
+.chat-empty {
+  margin: auto;
+  text-align: center;
+  color: var(--text-2);
+  padding: 40px 0;
+}
+.chat-empty-logo { width: 80px; margin: 0 auto 16px;
+                   filter: drop-shadow(0 0 16px rgba(0,240,255,0.4)); }
+.chat-empty-title {
+  font-family: "Syne", sans-serif;
+  font-size: 17px;
+  color: var(--text-0);
+  margin-bottom: 18px;
+}
+.chat-suggestions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 600px; margin: 0 auto; }
+.suggest-chip {
+  padding: 8px 14px;
+  font-size: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  color: var(--text-1);
+  transition: all var(--t-fast) var(--ease);
+}
+.suggest-chip:hover {
+  border-color: rgba(0, 240, 255, 0.4);
+  color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.chat-input-row {
+  display: flex; gap: 10px;
+  padding: 14px;
+  border-top: 1px solid var(--border);
+  background: rgba(0,0,0,0.25);
+}
+.chat-input-row input {
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  padding: 12px 18px;
+  color: var(--text-0);
+  font-size: 14px;
+  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+.chat-input-row input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,240,255,0.15);
+}
+
+/* ---------- 16. About view ---------- */
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.about-grid .card p { color: var(--text-1); margin-bottom: 12px; }
+.about-grid .card p:last-child { margin-bottom: 0; }
+.about-grid .card strong { color: var(--text-0); }
+.about-grid .card em { color: var(--magenta); font-style: normal; }
+
+.codeblock {
+  background: rgba(0,0,0,0.45);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 18px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--cyan);
+  margin: 12px 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* ---------- 17. Modals ---------- */
+.modal-root {
+  position: fixed; inset: 0;
+  z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-root.hidden { display: none; }
+.modal-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(2, 4, 8, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fade-in var(--t-base) var(--ease) both;
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 36px;
+  animation: modal-in var(--t-base) var(--ease-out) both;
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.94) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-2);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+  z-index: 2;
+}
+.modal-close:hover { color: var(--text-0); border-color: var(--magenta); }
+
+.modal-title {
+  font-family: "Syne", sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  color: var(--text-0);
+  margin-bottom: 6px;
+}
+.modal-sub { color: var(--text-2); font-size: 14px; margin-bottom: 20px; }
+
+/* Exam picker */
+.exam-pick-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+.exam-pick {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  text-align: left;
+  transition: all var(--t-fast) var(--ease);
+}
+.exam-pick:hover {
+  border-color: var(--cyan);
+  background: rgba(0, 240, 255, 0.04);
+  box-shadow: var(--glow-cyan);
+  transform: translateY(-2px);
+}
+.exam-pick-skill {
+  font-family: "Syne", sans-serif;
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--text-0);
+  margin-bottom: 4px;
+}
+.exam-pick-hint { font-size: 12px; color: var(--text-3); }
+
+/* Exam question */
+.exam-progress {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--text-2);
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+.exam-progress-bar {
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: var(--r-pill);
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+.exam-progress-bar span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  transition: width var(--t-slow) var(--ease-out);
+}
+.exam-question {
+  font-family: "Syne", sans-serif;
+  font-weight: 500;
+  font-size: 19px;
+  color: var(--text-0);
+  margin-bottom: 22px;
+  line-height: 1.4;
+}
+.exam-options { display: flex; flex-direction: column; gap: 8px; }
+.exam-option {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: rgba(255,255,255,0.02);
+  text-align: left;
+  transition: all var(--t-fast) var(--ease);
+}
+.exam-option:hover {
+  border-color: var(--cyan);
+  background: rgba(0, 240, 255, 0.05);
+  transform: translateX(4px);
+}
+.exam-option-letter {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(0, 240, 255, 0.10);
+  color: var(--cyan);
+  border: 1px solid rgba(0, 240, 255, 0.30);
+  flex-shrink: 0;
+}
+.exam-option-text { color: var(--text-1); font-size: 14px; }
+
+/* ---------- 18. Toasts ---------- */
+.toast-root {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 200;
+  display: flex; flex-direction: column;
+  gap: 10px;
+  max-width: 360px;
+}
+.toast {
+  padding: 14px 18px;
+  border-radius: var(--r-md);
+  background: rgba(10, 12, 18, 0.95);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--border-strong);
+  color: var(--text-0);
+  font-size: 13px;
+  display: flex; gap: 12px; align-items: start;
+  animation: toast-in 360ms var(--ease-out);
+  box-shadow: var(--shadow-card);
+}
+.toast.leaving { animation: toast-out 280ms var(--ease) forwards; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateX(20px); }
+}
+.toast-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+.toast.success { border-color: rgba(93, 255, 176, 0.40); }
+.toast.success .toast-dot { background: var(--success); box-shadow: 0 0 10px var(--success); }
+.toast.error   { border-color: rgba(255, 93, 122, 0.40); }
+.toast.error .toast-dot { background: var(--error); box-shadow: 0 0 10px var(--error); }
+.toast.info    { border-color: rgba(0, 240, 255, 0.40); }
+.toast.info .toast-dot { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+.toast-title { font-weight: 600; }
+.toast-body  { color: var(--text-1); margin-top: 2px; }
+
+/* ---------- 19. Helpers ---------- */
+.hidden { display: none !important; }
+
+/* Auth footer */
+.auth-footer {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+.link-btn {
+  font-size: 13px;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  transition: color var(--t-fast) var(--ease);
+  cursor: pointer;
+}
+.link-btn:hover { color: var(--cyan); }
+
+/* Match filters bar */
+.match-filters {
+  display: flex;
+  gap: 24px;
+  padding: 16px 22px;
+  margin-bottom: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.filter-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 220px;
+}
+.filter-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  min-width: 70px;
+}
+.filter-field input[type=range] { flex: 1; min-width: 100px; }
+.filter-readout {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  color: var(--cyan);
+  min-width: 42px;
+  text-align: right;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.35);
+}
+.filter-field select {
+  flex: 1;
+  background: rgba(0,0,0,0.30);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-0);
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease);
+}
+.filter-field select:focus { border-color: var(--cyan); }
+.filter-summary {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+
+/* ---------- 20. Responsive ---------- */
+@media (max-width: 980px) {
+  .auth-shell { grid-template-columns: 1fr; gap: 36px; }
+  .auth-title { font-size: 48px; }
+  .home-hero { grid-template-columns: 1fr; }
+  .hero-logo-img { width: 220px; }
+  .home-title { font-size: 44px; }
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .quick-grid { grid-template-columns: repeat(2, 1fr); }
+  .profile-grid { grid-template-columns: 1fr; }
+  .about-grid { grid-template-columns: 1fr; }
+  .field-row { grid-template-columns: 1fr; }
+  .page-title { font-size: 32px; }
+}
+
+@media (max-width: 640px) {
+  .topnav { padding: 12px 16px; flex-wrap: wrap; }
+  .navlinks { order: 3; width: 100%; overflow-x: auto; padding-bottom: 4px; }
+  .nav-right { order: 2; margin-left: auto; }
+  .nav-user { display: none; }
+  .view { padding: 24px 16px 60px; }
+  .stat-row, .quick-grid { grid-template-columns: 1fr; }
+  .match-card { grid-template-columns: 48px 1fr; padding: 16px; }
+  .score-ring { grid-column: 1 / -1; justify-self: end; width: 60px; height: 60px; margin-top: -42px; }
+  .auth-title { font-size: 40px; }
+  .home-title { font-size: 36px; }
+  .auth-card { padding: 24px; }
+  .modal-card { padding: 24px; }
+}
+.forgot-link {
+  align-self: flex-end;
+  font-size: 12px;
+  padding: 2px 4px;
+  margin-top: -8px;
+}
+
+  </style>
+</head>
+<body>
+
+  <!-- =========================================================
+       INLINE LOGO DEFINITION — defined once, referenced everywhere
+       via <svg class="..."><use href="#tf-logo"/></svg>.
+       No separate logo.svg file required.
+       ========================================================= -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="tfNeonGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="3" result="blur1"/>
+        <feGaussianBlur stdDeviation="8" result="blur2"/>
+        <feMerge>
+          <feMergeNode in="blur2"/>
+          <feMergeNode in="blur1"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <radialGradient id="tfBaseGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"  stop-color="#222633"/>
+        <stop offset="60%" stop-color="#0d1018"/>
+        <stop offset="100%" stop-color="#05060a"/>
+      </radialGradient>
+      <linearGradient id="tfCyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"  stop-color="#00f0ff"/>
+        <stop offset="100%" stop-color="#0091ff"/>
+      </linearGradient>
+      <linearGradient id="tfMagentaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"  stop-color="#ff2bd6"/>
+        <stop offset="100%" stop-color="#b800ff"/>
+      </linearGradient>
+    </defs>
+    <symbol id="tf-logo" viewBox="0 0 400 400">
+      <!-- Metallic base -->
+      <ellipse cx="200" cy="305" rx="135" ry="22" fill="url(#tfBaseGrad)" opacity="0.95"/>
+      <ellipse cx="200" cy="300" rx="135" ry="22" fill="none" stroke="#3a3f55" stroke-width="1.2"/>
+      <ellipse cx="200" cy="296" rx="110" ry="14" fill="none" stroke="#4a5070" stroke-width="0.8" opacity="0.7"/>
+
+      <!-- Torus wireframe -->
+      <g filter="url(#tfNeonGlow)" fill="none" stroke-linecap="round">
+        <ellipse cx="200" cy="200" rx="125" ry="40" stroke="url(#tfCyanGrad)" stroke-width="1.8"/>
+        <ellipse cx="200" cy="200" rx="125" ry="32" stroke="url(#tfCyanGrad)" stroke-width="1.2" opacity="0.85"/>
+        <ellipse cx="200" cy="200" rx="125" ry="22" stroke="url(#tfCyanGrad)" stroke-width="0.9" opacity="0.6"/>
+
+        <ellipse cx="200" cy="200" rx="58" ry="18" stroke="url(#tfMagentaGrad)" stroke-width="1.6"/>
+        <ellipse cx="200" cy="200" rx="58" ry="11" stroke="url(#tfMagentaGrad)" stroke-width="1.0" opacity="0.7"/>
+
+        <g stroke="url(#tfMagentaGrad)" stroke-width="1.0" opacity="0.8">
+          <path d="M 75 200  C 85 165, 92 165, 142 182  C 142 218, 92 235, 75 200 Z"/>
+          <path d="M 325 200 C 315 165, 308 165, 258 182 C 258 218, 308 235, 325 200 Z"/>
+        </g>
+
+        <g stroke="url(#tfCyanGrad)" stroke-width="0.9" opacity="0.55">
+          <path d="M 110 174 Q 200 152, 290 174"/>
+          <path d="M 110 226 Q 200 248, 290 226"/>
+          <path d="M 150 168 Q 200 152, 250 168"/>
+          <path d="M 150 232 Q 200 248, 250 232"/>
+        </g>
+
+        <g stroke="url(#tfCyanGrad)" stroke-width="0.7" opacity="0.45">
+          <path d="M 90 192 Q 200 158, 310 192"/>
+          <path d="M 90 208 Q 200 242, 310 208"/>
+        </g>
+
+        <circle cx="75"  cy="200" r="2.6" fill="#00f0ff"/>
+        <circle cx="325" cy="200" r="2.6" fill="#00f0ff"/>
+        <circle cx="200" cy="160" r="2.2" fill="#ff2bd6"/>
+        <circle cx="200" cy="240" r="2.2" fill="#ff2bd6"/>
+      </g>
+
+      <ellipse cx="200" cy="298" rx="60" ry="3" fill="#00f0ff" opacity="0.18"/>
+    </symbol>
+  </svg>
+
+  <!-- Atmospheric backdrop layers -->
+  <div class="bg-layer bg-grid" aria-hidden="true"></div>
+  <div class="bg-layer bg-glow-cyan" aria-hidden="true"></div>
+  <div class="bg-layer bg-glow-magenta" aria-hidden="true"></div>
+  <div class="bg-layer bg-noise" aria-hidden="true"></div>
+
+  <!-- =========================================================
+       TOP NAV (hidden on auth view)
+       ========================================================= -->
+  <header id="topnav" class="topnav hidden" aria-label="Primary">
+    <a href="#" class="brand" data-route="home">
+      <svg class="brand-logo" viewBox="0 0 400 400" aria-label="TeamFinder logo"><use href="#tf-logo"/></svg>
+      <span class="brand-text">Team<span class="brand-text-accent">Finder</span></span>
+    </a>
+
+    <nav class="navlinks">
+      <button class="navlink" data-route="home" data-auth="required">Home</button>
+      <button class="navlink" data-route="matches" data-auth="required">Matches</button>
+      <button class="navlink" data-route="projects" data-auth="required">Projects</button>
+      <button class="navlink" data-route="advisor" data-auth="required">Advisor</button>
+      <button class="navlink" data-route="profile" data-auth="required">Profile</button>
+      <button class="navlink" data-route="about">About</button>
+    </nav>
+
+    <div class="nav-right">
+      <span id="nav-user" class="nav-user"></span>
+      <button id="btn-logout" class="btn btn-ghost btn-sm" title="Sign out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span>Sign out</span>
+      </button>
+      <button id="btn-back-to-signin" class="btn btn-primary btn-sm hidden" data-route="auth">
+        Sign in
+      </button>
+    </div>
+  </header>
+
+  <main id="app">
+
+    <!-- =========================================================
+         AUTH VIEW
+         ========================================================= -->
+    <section id="view-auth" class="view view-auth active">
+      <div class="auth-shell">
+        <div class="auth-hero">
+          <svg class="auth-logo" viewBox="0 0 400 400" aria-hidden="true"><use href="#tf-logo"/></svg>
+          <h1 class="auth-title">
+            <span class="title-accent-cyan">Team</span><span class="title-accent-magenta">Finder</span>
+          </h1>
+          <p class="auth-tag">
+            Skill-graded matching. Cosine similarity. No vibes,<br/>just teammates who can actually ship.
+          </p>
+          <ul class="auth-bullets">
+            <li><span class="bullet-dot dot-cyan"></span> Verified skill levels via in-app exams</li>
+            <li><span class="bullet-dot dot-magenta"></span> Deterministic match scores you can audit</li>
+            <li><span class="bullet-dot dot-cyan"></span> Advisor chat that knows your profile</li>
+          </ul>
+        </div>
+
+        <div class="auth-card glass">
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">Sign in</button>
+            <button class="auth-tab" data-tab="register">Create account</button>
+            <span class="auth-tab-indicator" aria-hidden="true"></span>
+          </div>
+
+          <!-- LOGIN form -->
+          <form id="form-login" class="auth-form" novalidate>
+            <label class="field">
+              <span class="field-label">Email</span>
+              <input type="email" name="email" autocomplete="email" required placeholder="student@ju.edu.jo" />
+            </label>
+            <label class="field">
+              <span class="field-label">Password</span>
+              <input type="password" name="password" autocomplete="current-password" required minlength="8" placeholder="••••••••" />
+            </label>
+            <button type="button" class="link-btn forgot-link" id="btn-forgot-password">
+              <span>  Forgot password?  </span>
+              <span class="btn-arrow">→</span>
+            </button>
+            <button type="submit" class="btn btn-primary btn-block">
+              <span>Enter</span>
+              <span class="btn-arrow">→</span>
+            </button>
+          </form>
+
+          <!-- REGISTER form -->
+          <form id="form-register" class="auth-form hidden" novalidate>
+            <label class="field">
+              <span class="field-label">Full name</span>
+              <input type="text" name="full_name" autocomplete="name" required minlength="2" placeholder="user name " />
+            </label>
+            <label class="field">
+              <span class="field-label">Email</span>
+              <input type="email" name="email" autocomplete="email" required placeholder="student@ju.edu.jo" />
+            </label>
+            <label class="field">
+              <span class="field-label">Password</span>
+              <input type="password" name="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters" />
+            </label>
+            <button type="submit" class="btn btn-primary btn-block">
+              <span>Create account</span>
+              <span class="btn-arrow">→</span>
+            </button>
+            <p class="auth-hint">
+              Use a ju.edu.jo, gmail, yahoo, outlook, or hotmail address.
+            </p>
+          </form>
+
+          <div class="auth-footer">
+            <button class="link-btn" data-route="about">How does TeamFinder work? Read the disclosure →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         HOME VIEW
+         ========================================================= -->
+    <section id="view-home" class="view">
+      <div class="home-hero">
+        <div class="home-hero-text">
+          <span class="eyebrow">University team-matching · v2.1</span>
+          <h1 class="home-title">
+            Stop guessing.<br/>
+            Find your <span class="grad-text">project team</span>.
+          </h1>
+          <p class="home-sub">
+            TeamFinder ranks every other student against your verified skill vector
+            and shows you the best matches with a percentage score you can actually explain.
+          </p>
+          <div class="home-cta-row">
+            <button class="btn btn-primary" data-route="matches">Find teammates</button>
+            <button class="btn btn-ghost" data-route="projects">Browse projects</button>
+          </div>
+        </div>
+        <div class="home-hero-logo">
+          <svg class="hero-logo-img" viewBox="0 0 400 400" aria-hidden="true"><use href="#tf-logo"/></svg>
+          <div class="logo-orbit" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card glass">
+          <div class="stat-label">Students on platform</div>
+          <div class="stat-value" data-counter="0" id="stat-students">0</div>
+          <div class="stat-bar"><span style="--w:78%"></span></div>
+        </div>
+        <div class="stat-card glass">
+          <div class="stat-label">Open projects</div>
+          <div class="stat-value" data-counter="0" id="stat-projects">0</div>
+          <div class="stat-bar"><span style="--w:64%"></span></div>
+        </div>
+        <div class="stat-card glass">
+          <div class="stat-label">Your verified skills</div>
+          <div class="stat-value" data-counter="0" id="stat-skills">0</div>
+          <div class="stat-bar"><span style="--w:42%"></span></div>
+        </div>
+        <div class="stat-card glass">
+          <div class="stat-label">Top match score</div>
+          <div class="stat-value" data-counter="0" id="stat-top-match">0<span class="unit">%</span></div>
+          <div class="stat-bar"><span style="--w:92%"></span></div>
+        </div>
+      </div>
+
+      <div class="quick-grid">
+        <button class="quick-card glass" data-route="matches">
+          <div class="quick-icon icon-cyan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9"  cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+              <circle cx="17" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/>
+            </svg>
+          </div>
+          <h3>Find teammates</h3>
+          <p>Run cosine-similarity matching across every active student profile.</p>
+          <span class="quick-arrow">→</span>
+        </button>
+        <button class="quick-card glass" data-route="projects">
+          <div class="quick-icon icon-magenta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2"/>
+              <path d="M3 9h18M9 14h6M9 17h3"/>
+            </svg>
+          </div>
+          <h3>Projects board</h3>
+          <p>Live student projects plus curated picks from GitHub, Kaggle, and CTFtime.</p>
+          <span class="quick-arrow">→</span>
+        </button>
+        <button class="quick-card glass" data-route="advisor">
+          <div class="quick-icon icon-cyan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h3>Ask the advisor</h3>
+          <p>Get tactical advice on closing skill gaps and picking projects that fit you.</p>
+          <span class="quick-arrow">→</span>
+        </button>
+        <button class="quick-card glass" data-route="profile">
+          <div class="quick-icon icon-magenta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <h3>Edit profile</h3>
+          <p>Update your major, courses, availability, and take skill exams.</p>
+          <span class="quick-arrow">→</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         PROFILE VIEW
+         ========================================================= -->
+    <section id="view-profile" class="view">
+      <header class="page-head">
+        <div>
+          <span class="eyebrow">Step 1 of finding a team</span>
+          <h1 class="page-title">Your profile</h1>
+          <p class="page-sub">This is what the matching algorithm sees. The more honest the skills, the better the matches.</p>
+        </div>
+      </header>
+
+      <form id="form-profile" class="profile-grid">
+        <div class="profile-col-left">
+          <div class="glass card">
+            <h3 class="card-title"><span class="card-num">01</span> Identity</h3>
+            <div class="field-row">
+              <label class="field">
+                <span class="field-label">Major</span>
+                <input name="major" required placeholder="e.g., Computer Science" />
+              </label>
+              <label class="field">
+                <span class="field-label">GitHub URL <span class="opt">(optional)</span></span>
+                <input name="github_url" type="url" placeholder="https://github.com/you" />
+              </label>
+            </div>
+            <label class="field">
+              <span class="field-label">Courses <span class="opt">(comma-separated)</span></span>
+              <input name="courses" placeholder="CS101, CS201, MATH301" />
+            </label>
+            <label class="field">
+              <span class="field-label">Short bio <span class="opt">(max 500 chars)</span></span>
+              <textarea name="bio" maxlength="500" rows="3" placeholder="One paragraph: what you build, how you work."></textarea>
+            </label>
+          </div>
+
+          <div class="glass card">
+            <h3 class="card-title"><span class="card-num">02</span> Weekly availability</h3>
+            <div class="slider-wrap">
+              <input type="range" name="availability_hours" min="1" max="40" value="10" id="slider-hours" />
+              <div class="slider-readout">
+                <span id="slider-val">10</span><span class="slider-unit">hrs/week</span>
+              </div>
+            </div>
+            <div class="slider-scale"><span>1</span><span>10</span><span>20</span><span>30</span><span>40</span></div>
+          </div>
+        </div>
+
+        <div class="profile-col-right">
+          <div class="glass card">
+            <div class="card-title-row">
+              <h3 class="card-title"><span class="card-num">03</span> Verified skills</h3>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-open-exam">
+                + Take skill exam
+              </button>
+            </div>
+            <p class="card-help">Pass an exam to earn a proficiency level (0–5). Levels are what the matcher actually compares.</p>
+            <div id="skills-list" class="skills-list"></div>
+          </div>
+
+          <div class="glass card">
+            <h3 class="card-title"><span class="card-num">04</span> Save changes</h3>
+            <p class="card-help">Your profile is private to the matcher. Other students only see your name, major, shared skills, and bio.</p>
+            <button type="submit" class="btn btn-primary btn-block">
+              <span>Save profile</span><span class="btn-arrow">→</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- =========================================================
+         MATCHES VIEW
+         ========================================================= -->
+    <section id="view-matches" class="view">
+      <header class="page-head">
+        <div>
+          <span class="eyebrow">Cosine similarity over verified skills</span>
+          <h1 class="page-title">Find teammates</h1>
+          <p class="page-sub">Sorted by match score. A small bonus is added when your weekly availability lines up.</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-secondary" id="btn-refresh-matches">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="match-filters glass" id="match-filters">
+        <label class="filter-field">
+          <span class="filter-label">Min score</span>
+          <input type="range" id="filter-score" min="0" max="100" value="0" step="5"/>
+          <span class="filter-readout" id="filter-score-val">0%</span>
+        </label>
+        <label class="filter-field">
+          <span class="filter-label">Major</span>
+          <select id="filter-major">
+            <option value="">All majors</option>
+          </select>
+        </label>
+        <div class="filter-summary" id="filter-summary"></div>
+      </div>
+
+      <div id="matches-list" class="matches-list"></div>
+    </section>
+
+    <!-- =========================================================
+         PROJECTS VIEW
+         ========================================================= -->
+    <section id="view-projects" class="view">
+      <header class="page-head">
+        <div>
+          <span class="eyebrow">Live + curated</span>
+          <h1 class="page-title">Projects board</h1>
+          <p class="page-sub">Student-posted projects and curated picks from GitHub, Kaggle, and CTFtime.</p>
+        </div>
+        <div class="page-actions">
+          <div class="filter-pills" id="project-filters">
+            <button class="pill active" data-filter="all">All</button>
+            <button class="pill" data-filter="student">Student</button>
+            <button class="pill" data-filter="github">GitHub</button>
+            <button class="pill" data-filter="kaggle">Kaggle</button>
+            <button class="pill" data-filter="huggingface">HuggingFace</button>
+            <button class="pill" data-filter="ctftime">CTFtime</button>
+          </div>
+          <button class="btn btn-primary" id="btn-open-project">+ Post project</button>
+        </div>
+      </header>
+      <div id="projects-grid" class="projects-grid"></div>
+    </section>
+
+    <!-- =========================================================
+         ADVISOR VIEW
+         ========================================================= -->
+    <section id="view-advisor" class="view">
+      <header class="page-head">
+        <div>
+          <span class="eyebrow">Tactical chat · context-aware</span>
+          <h1 class="page-title">Advisor</h1>
+          <p class="page-sub">Knows your profile. Use it to plan exams, pick projects, or audit a match.</p>
+        </div>
+      </header>
+
+      <div class="chat-shell glass">
+        <div class="chat-stream" id="chat-stream">
+          <div class="chat-empty">
+            <svg class="chat-empty-logo" viewBox="0 0 400 400" aria-hidden="true"><use href="#tf-logo"/></svg>
+            <p class="chat-empty-title">Ask me anything about your team-finding journey.</p>
+            <div class="chat-suggestions">
+              <button class="suggest-chip" data-q="Which skill should I level up next based on my profile?">Which skill should I level up next?</button>
+              <button class="suggest-chip" data-q="Recommend a project from the board that fits my current skills.">Recommend a project for me</button>
+              <button class="suggest-chip" data-q="How is the match score calculated?">How is the match score calculated?</button>
+            </div>
+          </div>
+        </div>
+        <form class="chat-input-row" id="chat-form">
+          <input id="chat-input" autocomplete="off" placeholder="Ask the advisor…" maxlength="2000" />
+          <button type="submit" class="btn btn-primary btn-icon" aria-label="Send">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         ABOUT VIEW
+         ========================================================= -->
+    <section id="view-about" class="view">
+      <header class="page-head">
+        <div>
+          <span class="eyebrow">Disclosure</span>
+          <h1 class="page-title">How TeamFinder works</h1>
+          <p class="page-sub">No black boxes. Read what the matcher does, then decide whether you trust it.</p>
+        </div>
+      </header>
+
+      <div class="about-grid">
+        <article class="glass card">
+          <h3 class="card-title"><span class="card-num">A1</span> The matching algorithm</h3>
+          <p>Each profile contributes a sparse skill vector indexed against the union of all known skills across the platform. Slots not present in a profile are zero; verified skills hold their proficiency level (0–5).</p>
+          <p>The system computes <strong>cosine similarity</strong> between your vector and every other student's:</p>
+          <pre class="codeblock"><code>cosine(A, B) =      A · B
+              ─────────────────
+                |A| × |B|</code></pre>
+          <p>A small <em>availability bonus</em> (up to +0.05) is added when your weekly hours are close to the candidate's. The result is clamped to [0, 1] and shown as a percentage. The whole thing is deterministic — two identical profile inputs produce identical scores.</p>
+        </article>
+
+        <article class="glass card">
+          <h3 class="card-title"><span class="card-num">A2</span> Skill exams</h3>
+          <p>Self-reported skills are noise. Every skill on your profile must be earned by passing a short multiple-choice exam stored on the server, so a "Python: Level 4" badge means you got 71–85% on the Python exam — not that you said you were good at it.</p>
+          <p>Level bands: 0 ≤ 20%, 1 ≤ 40%, 2 ≤ 60%, 3 ≤ 70%, 4 ≤ 85%, 5 &gt; 85%.</p>
+        </article>
+
+        <article class="glass card">
+          <h3 class="card-title"><span class="card-num">A3</span> The advisor</h3>
+          <p>The Advisor chat is backed by a large language model (a hosted assistant API) when an API key is configured on the server, and falls back to a rule-based responder otherwise. Either way, your profile is sent in the prompt so replies are personalized.</p>
+          <p>Conversation history is kept client-side and only the last six turns are sent with each message. Messages are not stored after a session ends unless you save them yourself.</p>
+        </article>
+
+        <article class="glass card">
+          <h3 class="card-title"><span class="card-num">A4</span> Privacy</h3>
+          <p>Other students only see your name, major, shared skills with them, weekly availability, optional bio, and optional GitHub link. Your email is never exposed in match results. Passwords are stored as bcrypt hashes.</p>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================
+       MODAL ROOT (single overlay reused for every modal)
+       ========================================================= -->
+  <div id="modal-root" class="modal-root hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-card glass" role="dialog" aria-modal="true">
+      <button class="modal-close" data-modal-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Toast root -->
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+
+  <script>
+/* =====================================================================
+   TeamFinder — Single-Page Application
+   Vanilla ES2020, Fetch API, no framework.
+   ===================================================================== */
+
+(() => {
+'use strict';
+
+// ---------------------------------------------------------------------------
+// CONFIG & STATE
+// ---------------------------------------------------------------------------
+
+const API_BASE = 'http://127.0.0.1:8000';
+const TOKEN_KEY = 'tf_token';
+const ROUTE_KEY = 'tf_route';
+
+// Skills the backend has exam data for. Extend if more exams are added.
+const AVAILABLE_EXAMS = ['Python', 'React'];
+
+const state = {
+  token: null,
+  user: null,           // { email, full_name, profile_complete }
+  profile: null,        // UserProfile or null
+  chatHistory: [],      // [{role:'user'|'assistant', content:string}]
+  matches: [],
+  projects: [],
+  projectFilter: 'all',
+  matchFilters: { minScore: 0, major: '' },
+  currentRoute: 'auth',
+};
+
+// ---------------------------------------------------------------------------
+// UTILITIES
+// ---------------------------------------------------------------------------
+
+const $  = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+const escapeHTML = (str) => String(str ?? '').replace(/[&<>"']/g,
+  (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const initials = (name) => {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?';
+};
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// ---------------------------------------------------------------------------
+// TOASTS
+// ---------------------------------------------------------------------------
+
+function toast(title, body = '', type = 'info', duration = 3800) {
+  const root = $('#toast-root');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `
+    <span class="toast-dot"></span>
+    <div>
+      <div class="toast-title">${escapeHTML(title)}</div>
+      ${body ? `<div class="toast-body">${escapeHTML(body)}</div>` : ''}
+    </div>`;
+  root.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('leaving');
+    setTimeout(() => el.remove(), 320);
+  }, duration);
+}
+
+// ---------------------------------------------------------------------------
+// MODALS
+// ---------------------------------------------------------------------------
+
+const modal = {
+  open(html) {
+    $('#modal-body').innerHTML = html;
+    $('#modal-root').classList.remove('hidden');
+    $('#modal-root').setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  },
+  close() {
+    $('#modal-root').classList.add('hidden');
+    $('#modal-root').setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    $('#modal-body').innerHTML = '';
+  },
+};
+
+document.addEventListener('click', (e) => {
+  if (e.target.matches('[data-modal-close]') || e.target.closest('[data-modal-close]')) {
+    modal.close();
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('#modal-root').classList.contains('hidden')) modal.close();
+});
+
+// ---------------------------------------------------------------------------
+// API LAYER
+// ---------------------------------------------------------------------------
+
+async function apiCall(path, { method = 'GET', body, auth = true } = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (auth && state.token) headers['Authorization'] = `Bearer ${state.token}`;
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    throw new Error(`Cannot reach the API at ${API_BASE}. Is the backend running?`);
+  }
+
+  // Handle 401 → kick to auth
+  if (res.status === 401) {
+    setToken(null);
+    navigate('auth');
+    throw new Error('Session expired — please sign in again.');
+  }
+
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : {}; } catch { data = { detail: text }; }
+
+  if (!res.ok) {
+    const msg = data.detail || data.message || `Request failed (${res.status})`;
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+  }
+  return data;
+}
+
+const Api = {
+  register: (full_name, email, password) =>
+    apiCall('/api/auth/register', { method: 'POST', body: { full_name, email, password }, auth: false }),
+  login:    (email, password) =>
+    apiCall('/api/auth/login', { method: 'POST', body: { email, password }, auth: false }),
+  me:       () => apiCall('/api/auth/me'),
+
+  getMyProfile: () => apiCall('/api/profile/me'),
+  saveProfile:  (data) => apiCall('/api/profile', { method: 'POST', body: data }),
+
+  getExam:    (skill) => apiCall(`/api/skills/exam/${encodeURIComponent(skill)}`),
+  submitExam: (skill_name, answers) =>
+    apiCall('/api/skills/exam', { method: 'POST', body: { skill_name, answers } }),
+
+  match: (top_n = 20) => apiCall('/api/match', { method: 'POST', body: { top_n } }),
+
+  listProjects:  () => apiCall('/api/projects'),
+  createProject: (data) => apiCall('/api/projects', { method: 'POST', body: data }),
+
+  advisorChat: (message, conversation_history) =>
+    apiCall('/api/advisor/chat', { method: 'POST', body: { message, conversation_history } }),
+};
+
+// ---------------------------------------------------------------------------
+// TOKEN / SESSION
+// ---------------------------------------------------------------------------
+
+function setToken(token) {
+  state.token = token;
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  else       localStorage.removeItem(TOKEN_KEY);
+}
+
+function logout() {
+  setToken(null);
+  state.user = null;
+  state.profile = null;
+  state.chatHistory = [];
+  state.matches = [];
+  navigate('auth');
+  toast('Signed out', 'Come back soon.', 'info');
+}
+
+// ---------------------------------------------------------------------------
+// ROUTING (show/hide views)
+// ---------------------------------------------------------------------------
+
+const PROTECTED_ROUTES = new Set(['home', 'profile', 'matches', 'projects', 'advisor']);
+const PUBLIC_ROUTES    = new Set(['auth', 'about']);
+
+const VIEW_INITIALIZERS = {
+  auth:     initAuthView,
+  home:     initHomeView,
+  profile:  initProfileView,
+  matches:  initMatchesView,
+  projects: initProjectsView,
+  advisor:  initAdvisorView,
+  about:    initAboutView,
+};
+
+async function navigate(route) {
+  // Gate protected routes
+  if (PROTECTED_ROUTES.has(route) && !state.token) {
+    route = 'auth';
+  }
+  if (route === 'auth' && state.token) {
+    route = 'home';
+  }
+
+  const current = $(`.view.active`);
+  const target  = $(`#view-${route}`);
+  if (!target) return;
+
+  state.currentRoute = route;
+  localStorage.setItem(ROUTE_KEY, route);
+
+  // Top nav visibility & contents depend on auth + route
+  const authed = !!state.token;
+  $('#topnav').classList.toggle('hidden', route === 'auth');
+  $$('#topnav .navlink[data-auth="required"]').forEach(el => el.classList.toggle('hidden', !authed));
+  $('#btn-logout').classList.toggle('hidden', !authed);
+  $('#btn-back-to-signin').classList.toggle('hidden', authed);
+  $('#nav-user').classList.toggle('hidden', !authed);
+
+  // Update active navlink
+  $$('.navlink').forEach(n => n.classList.toggle('active', n.dataset.route === route));
+
+  // Animated transition
+  if (current && current !== target) {
+    current.classList.add('leaving');
+    await sleep(220);
+    current.classList.remove('active', 'leaving');
+  }
+  target.classList.add('active');
+
+  // Run view initializer
+  try {
+    await VIEW_INITIALIZERS[route]?.();
+  } catch (err) {
+    console.error(`[${route}] init failed:`, err);
+    toast('Something went wrong', err.message, 'error');
+  }
+}
+
+// Click delegation for any element with data-route
+document.addEventListener('click', (e) => {
+  const trigger = e.target.closest('[data-route]');
+  if (trigger) {
+    e.preventDefault();
+    navigate(trigger.dataset.route);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// ANIMATED COUNTERS
+// ---------------------------------------------------------------------------
+
+function animateCounter(el, target, { duration = 1100 } = {}) {
+  if (!el) return;
+  const start = parseFloat(el.dataset.counter || '0');
+  const t0 = performance.now();
+  const isFloat = !Number.isInteger(target);
+  const unit = el.querySelector('.unit'); // preserve unit suffix if present
+
+  function tick(now) {
+    const p = Math.min(1, (now - t0) / duration);
+    const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+    const val = start + (target - start) * eased;
+    const text = isFloat ? val.toFixed(1) : Math.round(val).toString();
+    if (unit) {
+      // Keep the unit span, only swap the leading text node
+      el.firstChild && el.firstChild.nodeType === Node.TEXT_NODE
+        ? (el.firstChild.nodeValue = text)
+        : el.insertBefore(document.createTextNode(text), unit);
+    } else {
+      el.textContent = text;
+    }
+    if (p < 1) requestAnimationFrame(tick);
+    else el.dataset.counter = String(target);
+  }
+  requestAnimationFrame(tick);
+}
+
+// ---------------------------------------------------------------------------
+// AUTH VIEW
+// ---------------------------------------------------------------------------
+
+function initAuthView() {
+  // Tab switching
+  const tabsRoot = $('.auth-tabs');
+  if (!tabsRoot.dataset.bound) {
+    tabsRoot.dataset.bound = '1';
+    $$('.auth-tab', tabsRoot).forEach(tab => {
+      tab.addEventListener('click', () => {
+        const which = tab.dataset.tab;
+        $$('.auth-tab', tabsRoot).forEach(t => t.classList.toggle('active', t === tab));
+        tabsRoot.dataset.tab = which;
+        $('#form-login').classList.toggle('hidden', which !== 'login');
+        $('#form-register').classList.toggle('hidden', which !== 'register');
+      });
+    });
+  }
+  const forgotBtn = $('#btn-forgot-password');
+if (forgotBtn && !forgotBtn.dataset.bound) {
+  forgotBtn.dataset.bound = '1';
+  forgotBtn.addEventListener('click', openForgotPasswordModal);
+}
+
+function openForgotPasswordModal() {
+  modal.open(`
+    <h2 class="modal-title">Reset your password</h2>
+    <p class="modal-sub">
+      Enter the email you registered with. Your request will be forwarded to the
+      platform maintainer, who can reset your password and email it back to you.
+    </p>
+    <form id="form-forgot">
+      <label class="field">
+        <span class="field-label">Email</span>
+        <input name="email" type="email" required placeholder="student@ju.edu.jo"/>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top:18px;">
+        <span>Send reset request</span><span class="btn-arrow">→</span>
+      </button>
+      <p class="auth-hint" style="margin-top:14px;">
+        Self-service password reset via email is a planned future enhancement.
+        For now, the maintainer handles resets manually within 24 hours.
+      </p>
+    </form>
+  `);
+
+  $('#form-forgot').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = (new FormData(e.currentTarget).get('email') || '').trim();
+    modal.close();
+    toast(
+      'Request received',
+      `If an account exists for ${email}, the maintainer will reach out within 24 hours.`,
+      'success',
+      6000
+    );
+  });
+}
+
+  // Login form
+  const loginForm = $('#form-login');
+  if (!loginForm.dataset.bound) {
+    loginForm.dataset.bound = '1';
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = loginForm.querySelector('button[type=submit]');
+      const data = Object.fromEntries(new FormData(loginForm).entries());
+      btn.disabled = true; btn.querySelector('span').textContent = 'Signing in…';
+      try {
+        const r = await Api.login(data.email.trim(), data.password);
+        setToken(r.access_token);
+        await afterLogin();
+        toast('Welcome back', '', 'success');
+      } catch (err) {
+        toast('Sign in failed', err.message, 'error');
+      } finally {
+        btn.disabled = false; btn.querySelector('span').textContent = 'Enter';
+      }
+    });
+  }
+
+  // Register form
+  const regForm = $('#form-register');
+  if (!regForm.dataset.bound) {
+    regForm.dataset.bound = '1';
+    regForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = regForm.querySelector('button[type=submit]');
+      const data = Object.fromEntries(new FormData(regForm).entries());
+      btn.disabled = true; btn.querySelector('span').textContent = 'Creating account…';
+      try {
+        const r = await Api.register(data.full_name.trim(), data.email.trim(), data.password);
+        setToken(r.access_token);
+        await afterLogin();
+        toast('Account created', 'Now finish your profile.', 'success');
+      } catch (err) {
+        toast('Could not register', err.message, 'error');
+      } finally {
+        btn.disabled = false; btn.querySelector('span').textContent = 'Create account';
+      }
+    });
+  }
+}
+
+async function afterLogin() {
+  state.user = await Api.me();
+  updateNavUser();
+  // Try to load the profile; if missing, push them to the profile editor.
+  try {
+    state.profile = await Api.getMyProfile();
+    navigate('home');
+  } catch {
+    state.profile = null;
+    navigate('profile');
+    toast('Complete your profile', 'Add your major, skills, and availability to start matching.', 'info', 5000);
+  }
+}
+
+function updateNavUser() {
+  $('#nav-user').textContent = state.user ? state.user.email : '';
+}
+
+// ---------------------------------------------------------------------------
+// HOME VIEW
+// ---------------------------------------------------------------------------
+
+async function initHomeView() {
+  // Try to load fresh profile (for skills count + top match)
+  try { state.profile = await Api.getMyProfile(); } catch {}
+
+  let totalUsers = 0, topScore = 0;
+  try {
+    const matchRes = await Api.match(50);
+    totalUsers = matchRes.total_users_searched || 0;
+    topScore = matchRes.matches[0]?.score_percent || 0;
+  } catch (e) {
+    // profile may not exist yet — silent fallback
+  }
+
+  let projectsCount = 0;
+  try {
+    const projRes = await Api.listProjects();
+    projectsCount = projRes.count || 0;
+  } catch {}
+
+  const skillsCount = state.profile ? Object.keys(state.profile.skills || {}).length : 0;
+
+  animateCounter($('#stat-students'),  totalUsers);
+  animateCounter($('#stat-projects'),  projectsCount);
+  animateCounter($('#stat-skills'),    skillsCount);
+  animateCounter($('#stat-top-match'), topScore, { duration: 1400 });
+}
+
+// ---------------------------------------------------------------------------
+// PROFILE VIEW
+// ---------------------------------------------------------------------------
+
+async function initProfileView() {
+  // Load latest profile if we have one
+  try { state.profile = await Api.getMyProfile(); }
+  catch { state.profile = null; }
+
+  const form = $('#form-profile');
+  const p = state.profile || {};
+  form.major.value             = p.major || '';
+  form.github_url.value        = p.github_url || '';
+  form.courses.value           = Array.isArray(p.courses) ? p.courses.join(', ') : '';
+  form.bio.value               = p.bio || '';
+  form.availability_hours.value = p.availability_hours || 10;
+  updateSliderReadout();
+  renderSkillsList();
+
+  // Bind once
+  if (!form.dataset.bound) {
+    form.dataset.bound = '1';
+
+    $('#slider-hours').addEventListener('input', updateSliderReadout);
+
+    $('#btn-open-exam').addEventListener('click', openExamPicker);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('button[type=submit]');
+      const fd  = new FormData(form);
+      const payload = {
+        major:              (fd.get('major') || '').trim(),
+        courses:            String(fd.get('courses') || '').split(',').map(s => s.trim()).filter(Boolean),
+        skills:             state.profile?.skills || {},
+        availability_hours: parseInt(fd.get('availability_hours'), 10) || 1,
+        github_url:         (fd.get('github_url') || '').trim() || null,
+        bio:                (fd.get('bio') || '').trim() || null,
+      };
+      btn.disabled = true; btn.querySelector('span').textContent = 'Saving…';
+      try {
+        state.profile = await Api.saveProfile(payload);
+        toast('Profile saved', 'You can start matching now.', 'success');
+        renderSkillsList();
+      } catch (err) {
+        toast('Could not save profile', err.message, 'error');
+      } finally {
+        btn.disabled = false; btn.querySelector('span').textContent = 'Save profile';
+      }
+    });
+  }
+}
+
+function updateSliderReadout() {
+  const slider = $('#slider-hours');
+  const val = slider.value;
+  $('#slider-val').textContent = val;
+  const pct = ((val - slider.min) / (slider.max - slider.min)) * 100;
+  slider.style.setProperty('--p', pct + '%');
+}
+
+function renderSkillsList() {
+  const skills = state.profile?.skills || {};
+  const entries = Object.entries(skills);
+  const list = $('#skills-list');
+
+  if (entries.length === 0) {
+    list.innerHTML = `<div class="skill-empty">No verified skills yet. Take an exam to earn your first level.</div>`;
+    return;
+  }
+  entries.sort(([,a],[,b]) => b - a);
+  list.innerHTML = entries.map(([name, level]) => {
+    const dots = Array.from({length: 5}, (_, i) =>
+      `<span class="d ${i < level ? 'on' : ''}"></span>`).join('');
+    return `
+      <div class="skill-row">
+        <span class="skill-name">${escapeHTML(name)}</span>
+        <span class="skill-dots">${dots}</span>
+        <span class="skill-level-label">Lv. ${level}/5</span>
+      </div>`;
+  }).join('');
+}
+
+// ---------------------------------------------------------------------------
+// SKILL EXAM (modal flow)
+// ---------------------------------------------------------------------------
+
+function openExamPicker() {
+  const cards = AVAILABLE_EXAMS.map(skill => `
+    <button class="exam-pick" data-skill="${escapeHTML(skill)}">
+      <div class="exam-pick-skill">${escapeHTML(skill)}</div>
+      <div class="exam-pick-hint">Multiple-choice · ~5 questions</div>
+    </button>`).join('');
+
+  modal.open(`
+    <h2 class="modal-title">Pick a skill exam</h2>
+    <p class="modal-sub">Pass an exam to earn a proficiency level (0–5) on your profile.</p>
+    <div class="exam-pick-grid">${cards}</div>
+    <p class="auth-hint">More exams will appear as the platform grows.</p>
+  `);
+
+  $$('.exam-pick').forEach(btn => {
+    btn.addEventListener('click', () => startExam(btn.dataset.skill));
+  });
+}
+
+async function startExam(skillName) {
+  modal.open(`<div style="padding:30px;text-align:center;color:var(--text-2);">Loading exam…</div>`);
+  try {
+    const { questions } = await Api.getExam(skillName);
+    runExam(skillName, questions);
+  } catch (err) {
+    modal.close();
+    toast('Exam unavailable', err.message, 'error');
+  }
+}
+
+function runExam(skillName, questions) {
+  const answers = {};
+  let i = 0;
+
+  function renderQuestion() {
+    const q = questions[i];
+    const opts = Object.entries(q.options || {}).map(([letter, txt]) => `
+      <button class="exam-option" data-letter="${escapeHTML(letter)}">
+        <span class="exam-option-letter">${escapeHTML(letter)}</span>
+        <span class="exam-option-text">${escapeHTML(txt)}</span>
+      </button>`).join('');
+
+    modal.open(`
+      <h2 class="modal-title">${escapeHTML(skillName)} exam</h2>
+      <div class="exam-progress">QUESTION ${i + 1} / ${questions.length}</div>
+      <div class="exam-progress-bar"><span style="width:${((i+1)/questions.length)*100}%"></span></div>
+      <p class="exam-question">${escapeHTML(q.question)}</p>
+      <div class="exam-options">${opts}</div>
+    `);
+
+    $$('.exam-option').forEach(b => {
+      b.addEventListener('click', async () => {
+        answers[q.id] = b.dataset.letter;
+        i += 1;
+        if (i < questions.length) {
+          renderQuestion();
+        } else {
+          await submitExam();
+        }
+      });
+    });
+  }
+
+  async function submitExam() {
+    modal.open(`<div style="padding:40px;text-align:center;color:var(--text-2);">Scoring your answers…</div>`);
+    try {
+      const r = await Api.submitExam(skillName, answers);
+      modal.close();
+      toast(
+        `${skillName} · Level ${r.proficiency_level}/5`,
+        `Scored ${r.score_percent}%. ${r.message}`,
+        'success',
+        5000
+      );
+      // Refresh local profile cache & redraw chips
+      try {
+        state.profile = await Api.getMyProfile();
+        renderSkillsList();
+      } catch {}
+    } catch (err) {
+      modal.close();
+      toast('Could not submit exam', err.message, 'error');
+    }
+  }
+
+  renderQuestion();
+}
+
+// ---------------------------------------------------------------------------
+// MATCHES VIEW
+// ---------------------------------------------------------------------------
+
+async function initMatchesView() {
+  const list = $('#matches-list');
+  list.innerHTML = `<div class="empty-state">Computing match scores…</div>`;
+
+  if (!$('#btn-refresh-matches').dataset.bound) {
+    $('#btn-refresh-matches').dataset.bound = '1';
+    $('#btn-refresh-matches').addEventListener('click', initMatchesView);
+
+    // Filter wiring
+    const scoreSlider = $('#filter-score');
+    scoreSlider.addEventListener('input', () => {
+      state.matchFilters.minScore = parseInt(scoreSlider.value, 10) || 0;
+      $('#filter-score-val').textContent = `${state.matchFilters.minScore}%`;
+      const max = parseInt(scoreSlider.max, 10);
+      scoreSlider.style.setProperty('--p', (state.matchFilters.minScore / max) * 100 + '%');
+      renderMatches();
+    });
+    $('#filter-major').addEventListener('change', (e) => {
+      state.matchFilters.major = e.target.value;
+      renderMatches();
+    });
+  }
+
+  try {
+    const r = await Api.match(20);
+    state.matches = r.matches || [];
+
+    // Populate the majors dropdown with whatever majors came back
+    const majors = Array.from(new Set(state.matches.map(m => m.major).filter(Boolean))).sort();
+    const select = $('#filter-major');
+    const currentVal = state.matchFilters.major;
+    select.innerHTML = '<option value="">All majors</option>' +
+      majors.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
+    if (majors.includes(currentVal)) select.value = currentVal;
+
+    renderMatches();
+  } catch (err) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <strong>No matches yet</strong>
+        ${escapeHTML(err.message)}.
+        <div style="margin-top:14px;">
+          <button class="btn btn-primary" data-route="profile">Complete your profile</button>
+        </div>
+      </div>`;
+  }
+}
+
+function renderMatches() {
+  const list = $('#matches-list');
+  const { minScore, major } = state.matchFilters;
+  const filtered = state.matches.filter(m =>
+    (m.score_percent || 0) >= minScore &&
+    (!major || m.major === major)
+  );
+
+  // Show summary line
+  const summary = $('#filter-summary');
+  if (summary) {
+    summary.textContent = `Showing ${filtered.length} of ${state.matches.length}`;
+  }
+
+  if (!state.matches.length) {
+    list.innerHTML = `<div class="empty-state"><strong>No other students yet</strong>Invite a classmate to register.</div>`;
+    return;
+  }
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><strong>No matches pass these filters</strong>Try lowering the minimum score or clearing the major filter.</div>`;
+    return;
+  }
+
+  // Shared SVG gradient for score rings (defined once)
+  const gradientDefs = `
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"  stop-color="#00f0ff"/>
+          <stop offset="100%" stop-color="#ff2bd6"/>
+        </linearGradient>
+      </defs>
+    </svg>`;
+
+  const items = filtered.map((m, idx) => {
+    const pct  = Math.round(m.score_percent || 0);
+    const R    = 32;
+    const CIRC = 2 * Math.PI * R;
+    const off  = CIRC * (1 - pct / 100);
+
+    const sharedChips = (m.shared_skills || []).slice(0, 5)
+      .map(s => `<span class="skill-chip">${escapeHTML(s)}</span>`).join('');
+    const extra = m.shared_skills?.length > 5
+      ? `<span class="skill-chip">+${m.shared_skills.length - 5}</span>` : '';
+
+    return `
+      <article class="match-card glass" style="animation-delay:${idx * 60}ms">
+        <div class="avatar">${initials(m.full_name)}</div>
+        <div class="match-body">
+          <div class="match-name">${escapeHTML(m.full_name)}</div>
+          <div class="match-meta">
+            <span>${escapeHTML(m.major || 'Unknown major')}</span>
+            <span class="match-meta-dot">·</span>
+            <span>${m.availability_hours || 0} hrs/week</span>
+            ${m.github_url ? `<span class="match-meta-dot">·</span>
+              <span><a href="${escapeHTML(m.github_url)}" target="_blank" rel="noopener" style="color:var(--cyan)">GitHub ↗</a></span>` : ''}
+          </div>
+          ${m.bio ? `<p class="match-bio">${escapeHTML(m.bio)}</p>` : ''}
+          <div class="match-skills">
+            ${sharedChips || '<span style="font-size:12px;color:var(--text-3)">No shared skills (yet)</span>'}
+            ${extra}
+          </div>
+        </div>
+        <div class="score-ring" title="${pct}% match">
+          <svg viewBox="0 0 76 76">
+            <circle class="ring-bg"   cx="38" cy="38" r="${R}" fill="none" stroke-width="4"/>
+            <circle class="ring-fill" cx="38" cy="38" r="${R}" fill="none" stroke-width="4"
+                    stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}" data-final-off="${off}"/>
+          </svg>
+          <div class="score-text">${pct}<small>match</small></div>
+        </div>
+      </article>`;
+  }).join('');
+
+  list.innerHTML = gradientDefs + items;
+
+  // Animate score rings filling in
+  requestAnimationFrame(() => {
+    $$('.ring-fill').forEach(c => {
+      c.style.strokeDashoffset = c.dataset.finalOff;
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// PROJECTS VIEW
+// ---------------------------------------------------------------------------
+
+async function initProjectsView() {
+  const grid = $('#projects-grid');
+  grid.innerHTML = `<div class="empty-state">Loading projects…</div>`;
+
+  // Bind filters & post button once
+  if (!$('#project-filters').dataset.bound) {
+    $('#project-filters').dataset.bound = '1';
+    $$('#project-filters .pill').forEach(p => {
+      p.addEventListener('click', () => {
+        state.projectFilter = p.dataset.filter;
+        $$('#project-filters .pill').forEach(x => x.classList.toggle('active', x === p));
+        renderProjects();
+      });
+    });
+    $('#btn-open-project').addEventListener('click', openPostProjectModal);
+  }
+
+  try {
+    const r = await Api.listProjects();
+    state.projects = r.projects || [];
+    renderProjects();
+  } catch (err) {
+    grid.innerHTML = `<div class="empty-state"><strong>Could not load projects</strong>${escapeHTML(err.message)}</div>`;
+  }
+}
+
+function renderProjects() {
+  const grid = $('#projects-grid');
+  const list = state.projectFilter === 'all'
+    ? state.projects
+    : state.projects.filter(p => p.source === state.projectFilter);
+
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state"><strong>No projects in this category</strong>Be the first to post one.</div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map((p, i) => {
+    const chips = (p.skills_required || []).slice(0, 6)
+      .map(s => `<span class="skill-chip req">${escapeHTML(s)}</span>`).join('');
+    const sourceLabel = (p.source || 'student').toUpperCase();
+    return `
+      <article class="project-card glass" style="animation-delay:${i * 50}ms">
+        <div class="project-head">
+          <h3 class="project-title">${escapeHTML(p.title)}</h3>
+          <span class="source-tag source-${escapeHTML(p.source || 'student')}">${escapeHTML(sourceLabel)}</span>
+        </div>
+        <p class="project-desc">${escapeHTML(p.description)}</p>
+        <div class="project-skills">${chips}</div>
+        <div class="project-foot">
+          <span>${(p.members?.length || 0)} member${(p.members?.length || 0) === 1 ? '' : 's'}</span>
+          <span>#${escapeHTML(p.id)}</span>
+        </div>
+      </article>`;
+  }).join('');
+}
+
+function openPostProjectModal() {
+  modal.open(`
+    <h2 class="modal-title">Post a project</h2>
+    <p class="modal-sub">Share what you're building. Teammates with matching skills will find it.</p>
+    <form id="form-new-project">
+      <label class="field">
+        <span class="field-label">Project title</span>
+        <input name="title" maxlength="120" required placeholder="e.g., Campus food-waste predictor"/>
+      </label>
+      <label class="field">
+        <span class="field-label">Description</span>
+        <textarea name="description" rows="4" maxlength="1000" required placeholder="What problem does it solve? What are you looking for?"></textarea>
+      </label>
+      <label class="field">
+        <span class="field-label">Required skills <span class="opt">(comma-separated)</span></span>
+        <input name="skills_required" placeholder="Python, SQL, React"/>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top:16px;">
+        <span>Post project</span><span class="btn-arrow">→</span>
+      </button>
+    </form>
+  `);
+
+  $('#form-new-project').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const btn = e.currentTarget.querySelector('button[type=submit]');
+    btn.disabled = true; btn.querySelector('span').textContent = 'Posting…';
+    try {
+      await Api.createProject({
+        title:           fd.get('title').trim(),
+        description:     fd.get('description').trim(),
+        skills_required: String(fd.get('skills_required') || '').split(',').map(s => s.trim()).filter(Boolean),
+      });
+      modal.close();
+      toast('Project posted', '', 'success');
+      initProjectsView();
+    } catch (err) {
+      toast('Could not post project', err.message, 'error');
+      btn.disabled = false; btn.querySelector('span').textContent = 'Post project';
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// ADVISOR VIEW
+// ---------------------------------------------------------------------------
+
+function initAdvisorView() {
+  const form = $('#chat-form');
+  if (form.dataset.bound) return;
+  form.dataset.bound = '1';
+
+  // Suggestion chips
+  document.addEventListener('click', (e) => {
+    const chip = e.target.closest('.suggest-chip');
+    if (chip) {
+      $('#chat-input').value = chip.dataset.q;
+      form.requestSubmit();
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = $('#chat-input');
+    const message = input.value.trim();
+    if (!message) return;
+    input.value = '';
+    await sendChatMessage(message);
+  });
+}
+
+async function sendChatMessage(message) {
+  const stream = $('#chat-stream');
+
+  // Clear empty-state on first send
+  const empty = stream.querySelector('.chat-empty');
+  if (empty) empty.remove();
+
+  // Append user message bubble
+  const userBubble = document.createElement('div');
+  userBubble.className = 'msg user';
+  userBubble.textContent = message;
+  stream.appendChild(userBubble);
+
+  // Append typing indicator
+  const typing = document.createElement('div');
+  typing.className = 'msg ai typing';
+  typing.innerHTML = `<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>`;
+  stream.appendChild(typing);
+  stream.scrollTop = stream.scrollHeight;
+
+  // Trim history to last 6 turns
+  const history = state.chatHistory.slice(-6);
+
+  try {
+    const r = await Api.advisorChat(message, history);
+    typing.remove();
+
+    const aiBubble = document.createElement('div');
+    aiBubble.className = 'msg ai';
+    aiBubble.textContent = r.reply;
+    stream.appendChild(aiBubble);
+    stream.scrollTop = stream.scrollHeight;
+
+    state.chatHistory.push({ role: 'user',      content: message });
+    state.chatHistory.push({ role: 'assistant', content: r.reply });
+  } catch (err) {
+    typing.remove();
+    const errBubble = document.createElement('div');
+    errBubble.className = 'msg ai';
+    errBubble.style.borderColor = 'rgba(255, 93, 122, 0.4)';
+    errBubble.textContent = `Couldn't reach the advisor — ${err.message}`;
+    stream.appendChild(errBubble);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ABOUT VIEW (static, no init needed)
+// ---------------------------------------------------------------------------
+
+function initAboutView() { /* no-op */ }
+
+// ---------------------------------------------------------------------------
+// BOOT
+// ---------------------------------------------------------------------------
+
+async function boot() {
+  // Logout button
+  $('#btn-logout').addEventListener('click', logout);
+
+  // Restore token from localStorage
+  const stored = localStorage.getItem(TOKEN_KEY);
+  if (stored) {
+    state.token = stored;
+    try {
+      state.user = await Api.me();
+      updateNavUser();
+      const last = localStorage.getItem(ROUTE_KEY);
+      const target = (last && PROTECTED_ROUTES.has(last)) ? last : 'home';
+      navigate(target);
+    } catch {
+      setToken(null);
+      navigate('auth');
+    }
+  } else {
+    navigate('auth');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+
+})();
+
+  </script>
+</body>
+</html>
